@@ -1,4 +1,4 @@
-package main
+package components 
 
 import (
 	"fmt"
@@ -11,29 +11,29 @@ import (
 type (
 	errMsg error
 )
-type inputModel struct {
+type InputModel struct {
 	textInput textinput.Model
 	err error 
 }
 
-func initialModel() inputModel {
+func initialModel() InputModel {
 	ti := textinput.New()
 	ti.Placeholder = "Cron Job Notation"
 	ti.Focus()
 	ti.CharLimit = 156
 	ti.Width = 20
 
-	return inputModel{
+	return InputModel{
 		textInput: ti,
 		err: nil, 
 	}
 }
 
-func (im inputModel) Init() tea.Cmd {
+func (im InputModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (im inputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (im InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -51,7 +51,7 @@ func (im inputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return im, cmd
 }
 
-func (im inputModel) View() string {
+func (im InputModel) View() string {
 	return fmt.Sprintf(
 		"Input Cron Job Notation:\n\n%s\n\n%s",
 		im.textInput.View(),

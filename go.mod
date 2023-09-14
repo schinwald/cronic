@@ -1,4 +1,4 @@
-module cronic
+module github.com/schinwald/cronic
 
 go 1.18
 

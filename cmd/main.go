@@ -7,11 +7,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/schinwald/cronic/internal/components"
 )
 
 type tabModel struct {
 	Tabs []string
-	TabContent []*inputModel
+	TabContent []*components.InputModel
 	activeTab int
 }
 
@@ -114,7 +115,7 @@ func min(a, b int) int {
 
 func main() {	
 	tabs := []string{"List", "Timeline", "Details"}
-	tabContent := []*inputModel{new(inputModel), new(inputModel), new(inputModel)}
+	tabContent := []*components.InputModel{new(components.InputModel), new(components.InputModel), new(components.InputModel)}
 	tm := tabModel{Tabs: tabs, TabContent: tabContent}
 
 	if _, err := tea.NewProgram(tm).Run(); err != nil {
