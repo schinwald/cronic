@@ -7,20 +7,26 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
 	"github.com/schinwald/cronic/internal/components"
 )
 
 type tabModel struct {
 	Tabs []string
-	TabContent []*components.InputModel
+	TabContent []components.InputModel
 	activeTab int
 }
 
 func (tm tabModel) Init() tea.Cmd {
+	for _, tabContent := range tm.TabContent {
+		tabContent.Init()
+	}
 	return nil
 }
 
 func (tm tabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
@@ -32,13 +38,11 @@ func (tm tabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "left", "h", "p", "shift+tab":
 			tm.activeTab = max(tm.activeTab-1, 0)
 			return tm, nil
-		default:
-			tm.TabContent[tm.activeTab].Update(msg)
-			return tm, nil
 		}
 	}
 
-	return tm, nil
+	tm.TabContent[tm.activeTab], cmd = tm.TabContent[tm.activeTab].Update(msg)
+	return tm, cmd
 }
 
 func tabBorders(left, middle, right string) lipgloss.Border {
@@ -113,9 +117,9 @@ func min(a, b int) int {
 	return b
 }
 
-func main() {	
+func main() {
 	tabs := []string{"List", "Timeline", "Details"}
-	tabContent := []*components.InputModel{new(components.InputModel), new(components.InputModel), new(components.InputModel)}
+	tabContent := []components.InputModel{components.InitialModel(), components.InitialModel(), components.InitialModel()}
 	tm := tabModel{Tabs: tabs, TabContent: tabContent}
 
 	if _, err := tea.NewProgram(tm).Run(); err != nil {

@@ -1,8 +1,7 @@
-package components 
+package components
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,12 +10,13 @@ import (
 type (
 	errMsg error
 )
+
 type InputModel struct {
 	textInput textinput.Model
-	err error 
+	err error
 }
 
-func initialModel() InputModel {
+func InitialModel() InputModel {
 	ti := textinput.New()
 	ti.Placeholder = "Cron Job Notation"
 	ti.Focus()
@@ -25,7 +25,7 @@ func initialModel() InputModel {
 
 	return InputModel{
 		textInput: ti,
-		err: nil, 
+		err: nil,
 	}
 }
 
@@ -33,7 +33,7 @@ func (im InputModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (im InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (im InputModel) Update(msg tea.Msg) (InputModel, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -47,7 +47,7 @@ func (im InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return im, nil
 	}
 
-	im.textInput, cmd = im.textInput.Update(msg)
+	im.textInput, cmd = im.textInput.Update(msg) 
 	return im, cmd
 }
 
@@ -57,12 +57,4 @@ func (im InputModel) View() string {
 		im.textInput.View(),
 		"(esc to quit)",
 	) + "\n"
-}
-
-func inputCronNotation() {
-	
-	p := tea.NewProgram(initialModel())
-	if _, err := p.Run(); err != nil {
-		log.Fatal(err)
-	}
 }
