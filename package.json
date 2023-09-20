@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "prepare": "husky install && go install github.com/mgechev/revive@latest",
     "test": "exit 0",
-    "prepare": "husky install && go install github.com/mgechev/revive@latest"
+    "start:development": "go run cmd/main.go"
   },
   "author": "",
   "license": "ISC",
