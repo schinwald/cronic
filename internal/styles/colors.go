@@ -7,15 +7,58 @@ import (
 )
 
 var (
-	PrimaryColor    = lipgloss.Color("#00FF00")
-	SecondaryColor  = lipgloss.Color("#FF0000")
-	ForegroundColor = lipgloss.Color("#777777")
-	BorderStyle     = lipgloss.NewStyle().
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(ForegroundColor)
+	Black = "0"
+	Red = "1"
+	Green = "2"
+	Yellow = "3"
+	Blue = "4"
+	Magenta = "5"
+	Cyan = "6"
+	White = "7"
+	BrightBlack = "8"
+	BrightRed = "9"
+	BrightGreen = "10"
+	BrightYellow = "11"
+	BrightBlue = "12"
+	BrightMagenta = "13"
+	BrightCyan = "14"
+	BrightWhite = "15"
 )
 
-func PanelStyle(title string, content string, width int, height int) string {
+var (
+	PrimaryColor    = lipgloss.Color(Green)
+	SecondaryColor  = lipgloss.Color(BrightBlack)
+	ForegroundColor = lipgloss.Color(White)
+	DimmedForegroundColor = lipgloss.Color(BrightBlack)
+	BorderStyle     = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(DimmedForegroundColor)
+)
+
+func BlockStyle(width int, height int) string {
+	var view strings.Builder
+
+	blockStyle := lipgloss.NewStyle().
+		Border(lipgloss.BlockBorder()).
+		Border(lipgloss.Border{
+			Top: "▅",
+			Bottom: "🮄",
+			Left: "█",
+			Right: "█",
+			TopRight: "▅",
+			BottomRight: "🮄",
+			TopLeft: "▅",
+			BottomLeft: "🮄",
+		}).
+		Width(width).
+		Height(height).
+		Background(lipgloss.Color(White)).
+		BorderForeground(lipgloss.Color(White))
+
+	view.WriteString(blockStyle.Render(""))
+
+	return view.String()
+}
+
+func PanelStyle(title string, content string, width int, height int, paddingY int, paddingX int) string {
 	var s strings.Builder
 
 	titleStyle := lipgloss.NewStyle().
@@ -23,14 +66,15 @@ func PanelStyle(title string, content string, width int, height int) string {
 		Padding(0, 1).
 		Render(title)
 
-	boxBorderStyle := BorderStyle.
+	boxBorderStyle := BorderStyle.Copy().
 		BorderTop(false).
 		BorderRight(true).
 		BorderBottom(true).
 		BorderLeft(true).
-		Width(width).
-		Height(height).
-		Padding(2, 5).
+		BorderForeground(DimmedForegroundColor).
+		Width(width - 2).
+		Height(height - 1).
+		Padding(paddingY, paddingX).
 		Render(content)
 
 	outerWidth := lipgloss.Width(boxBorderStyle)
@@ -47,8 +91,8 @@ func PanelStyle(title string, content string, width int, height int) string {
 	}
 	boxTopRightBorder.WriteRune('┐')
 
-	boxTopLeftBorderStyle := lipgloss.NewStyle().Foreground(ForegroundColor).Render(boxTopLeftBorder.String())
-	boxTopRightBorderStyle := lipgloss.NewStyle().Foreground(ForegroundColor).Render(boxTopRightBorder.String())
+	boxTopLeftBorderStyle := lipgloss.NewStyle().Foreground(DimmedForegroundColor).Render(boxTopLeftBorder.String())
+	boxTopRightBorderStyle := lipgloss.NewStyle().Foreground(DimmedForegroundColor).Render(boxTopRightBorder.String())
 
 	var boxTopBorder strings.Builder
 	boxTopBorder.WriteString(boxTopLeftBorderStyle)
