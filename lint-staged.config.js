@@ -1,3 +1,3 @@
 module.exports = {
-  "*.go": "revive -config revive.toml"
+  "**/*.go": "revive -config revive.toml"
 }

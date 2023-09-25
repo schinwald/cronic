@@ -1,60 +1,77 @@
 package components
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-)
-
-type (
-	errMsg error
+	"github.com/schinwald/cronic/internal/styles"
 )
 
 type InputModel struct {
+	title     string
 	textInput textinput.Model
-	err error
+	err       error
 }
 
-func InitialModel() InputModel {
+func MakeInputModel() InputModel {
 	ti := textinput.New()
-	ti.Placeholder = "Cron Job Notation"
-	ti.Focus()
-	ti.CharLimit = 156
-	ti.Width = 20
+	ti.Prompt = ""
+	ti.PlaceholderStyle.Foreground(styles.DimmedForegroundColor)
 
 	return InputModel{
 		textInput: ti,
-		err: nil,
+		err:       nil,
 	}
 }
 
-func (im InputModel) Init() tea.Cmd {
+func (m InputModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (im InputModel) Update(msg tea.Msg) (InputModel, tea.Cmd) {
+func (m InputModel) Update(msg tea.Msg) (InputModel, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyEnter, tea.KeyCtrlC, tea.KeyEsc:
-			return im, tea.Quit
 		}
-	case errMsg:
-		im.err = msg
-		return im, nil
+	case error:
+		m.err = msg
+		return m, nil
 	}
 
-	im.textInput, cmd = im.textInput.Update(msg) 
-	return im, cmd
+	m.textInput, cmd = m.textInput.Update(msg)
+
+	return m, cmd
 }
 
-func (im InputModel) View() string {
-	return fmt.Sprintf(
-		"Input Cron Job Notation:\n\n%s\n\n%s",
-		im.textInput.View(),
-		"(esc to quit)",
-	) + "\n"
+func (m InputModel) View() string {
+	var view strings.Builder
+	view.WriteString(m.textInput.View())
+	return view.String()
+}
+
+func (m *InputModel) Focus() {
+	m.textInput.Focus()
+}
+
+func (m *InputModel) Blur() {
+	m.textInput.Blur()
+}
+
+func (m *InputModel) Placeholder(value string) {
+	m.textInput.Placeholder = value
+}
+
+func (m *InputModel) Width(value int) {
+	m.textInput.Width = value
+}
+
+func (m *InputModel) CharLimit(value int) {
+	m.textInput.CharLimit = value
+}
+
+func (m *InputModel) Value() string {
+	return m.textInput.Value()
 }
