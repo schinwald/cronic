@@ -110,11 +110,6 @@ func (m AddModel) View() string {
 
 	gap := lipgloss.NewStyle().Padding(1, 1).Render("")
 
-	legendWidth := 70
-	m.schedulePanel.Size(m.width-(lipgloss.Width(gap)/2 + legendWidth), 15)
-	m.legendPanel.Size(legendWidth - lipgloss.Width(gap)/2, 15)
-	m.nextOccurrencePanel.Size(int(m.width*1.0), 4)
-
 	titleStyle := lipgloss.NewStyle().Foreground(styles.PrimaryColor)
 
 	view.WriteString(titleStyle.Render("Program: "))
@@ -131,8 +126,25 @@ func (m AddModel) View() string {
 	}
 
 	var main string
-	main = lipgloss.JoinHorizontal(lipgloss.Top, m.schedulePanel.View(), gap, m.legendPanel.View())
-	main = lipgloss.JoinVertical(lipgloss.Left, main, m.nextOccurrencePanel.View())
+
+	if m.width >= 150 {
+		legendWidth := 70
+		m.schedulePanel.Size(m.width-(lipgloss.Width(gap)/2 + legendWidth), 15)
+		m.legendPanel.Size(legendWidth - lipgloss.Width(gap)/2, 15)
+		m.nextOccurrencePanel.Size(m.width, 4)
+		main = lipgloss.JoinHorizontal(lipgloss.Top, m.schedulePanel.View(), gap, m.legendPanel.View())
+		main = lipgloss.JoinVertical(lipgloss.Left, main, m.nextOccurrencePanel.View())
+	} else {
+		m.schedulePanel.Size(m.width, 15)
+		m.legendPanel.Size(m.width, 15)
+		m.nextOccurrencePanel.Size(m.width, 4)
+		main = lipgloss.JoinVertical(lipgloss.Left,
+			m.schedulePanel.View(),
+			m.legendPanel.View(),
+			m.nextOccurrencePanel.View(),
+		)
+	}
+
 	view.WriteRune('\n')
 	view.WriteRune('\n')
 	view.WriteRune('\n')
