@@ -5,11 +5,9 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/schinwald/cronic/internal/styles"
 )
 
 type InputModel struct {
-	title     string
 	textInput textinput.Model
 	err       error
 }
@@ -17,7 +15,7 @@ type InputModel struct {
 func MakeInputModel() InputModel {
 	ti := textinput.New()
 	ti.Prompt = ""
-	ti.PlaceholderStyle.Foreground(styles.DimmedForegroundColor)
+	ti.Placeholder = "*"
 
 	return InputModel{
 		textInput: ti,

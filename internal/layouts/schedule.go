@@ -2,26 +2,29 @@ package layouts
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/lnquy/cron"
 
 	"github.com/schinwald/cronic/internal/components"
 	"github.com/schinwald/cronic/internal/styles"
 )
 
 type ScheduleModel struct {
-	focus           int
-	focusCallback   func(int) error
-	width           int
-	height          int
-	minuteInput     components.InputModel
-	hourInput       components.InputModel
-	dayOfMonthInput components.InputModel
-	monthInput      components.InputModel
-	dayOfWeekInput  components.InputModel
-	err             error
+	focus             int
+	focusCallback     func(int) error
+	width             int
+	height            int
+	naturalDescriptor *cron.ExpressionDescriptor
+	minuteInput       components.InputModel
+	hourInput         components.InputModel
+	dayOfMonthInput   components.InputModel
+	monthInput        components.InputModel
+	dayOfWeekInput    components.InputModel
+	err               error
 }
 
 func defaultFocusCallback(focus int) error {
@@ -34,15 +37,17 @@ func MakeScheduleModel() ScheduleModel {
 	dayOfMonthInput := components.MakeInputModel()
 	monthInput := components.MakeInputModel()
 	dayOfWeekInput := components.MakeInputModel()
+	naturalDescriptor, _ := cron.NewDescriptor()
 
 	return ScheduleModel{
-		focus:           minute,
-		focusCallback:   defaultFocusCallback,
-		minuteInput:     minuteInput,
-		hourInput:       hourInput,
-		dayOfMonthInput: dayOfMonthInput,
-		monthInput:      monthInput,
-		dayOfWeekInput:  dayOfWeekInput,
+		focus:             minute,
+		focusCallback:     defaultFocusCallback,
+		naturalDescriptor: naturalDescriptor,
+		minuteInput:       minuteInput,
+		hourInput:         hourInput,
+		dayOfMonthInput:   dayOfMonthInput,
+		monthInput:        monthInput,
+		dayOfWeekInput:    dayOfWeekInput,
 	}
 }
 
@@ -130,7 +135,45 @@ func (m ScheduleModel) View() string {
 
 	paddingY, paddingX := 0, 0
 
-	naturalTextBar := lipgloss.NewStyle().Italic(true).Render("Every minute")
+	minute := m.minuteInput.Value()
+	if minute == "" {
+		minute = "*"
+	}
+
+	hour := m.hourInput.Value()
+	if hour == "" {
+		hour = "*"
+	}
+
+	dayOfMonth := m.dayOfMonthInput.Value()
+	if dayOfMonth == "" {
+		dayOfMonth = "*"
+	}
+
+	month := m.monthInput.Value()
+	if month == "" {
+		month = "*"
+	}
+
+	dayOfWeek := m.dayOfWeekInput.Value()
+	if dayOfWeek == "" {
+		dayOfWeek = "*"
+	}
+
+	description, err := m.naturalDescriptor.ToDescription(
+		fmt.Sprintf("%s %s %s %s %s",
+			minute,
+			hour,
+			dayOfMonth,
+			month,
+			dayOfWeek,
+		), cron.Locale_en)
+
+	if err != nil {
+		description = "???"
+	}
+
+	naturalTextBar := lipgloss.NewStyle().Italic(true).Render(description)
 	inputBar := createInputBar(m, 12)
 	headerBar := createHeaderBar(m, 12)
 
