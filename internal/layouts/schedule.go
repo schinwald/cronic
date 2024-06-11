@@ -135,40 +135,7 @@ func (m ScheduleModel) View() string {
 
 	paddingY, paddingX := 0, 0
 
-	minute := m.minuteInput.Value()
-	if minute == "" {
-		minute = "*"
-	}
-
-	hour := m.hourInput.Value()
-	if hour == "" {
-		hour = "*"
-	}
-
-	dayOfMonth := m.dayOfMonthInput.Value()
-	if dayOfMonth == "" {
-		dayOfMonth = "*"
-	}
-
-	month := m.monthInput.Value()
-	if month == "" {
-		month = "*"
-	}
-
-	dayOfWeek := m.dayOfWeekInput.Value()
-	if dayOfWeek == "" {
-		dayOfWeek = "*"
-	}
-
-	description, err := m.naturalDescriptor.ToDescription(
-		fmt.Sprintf("%s %s %s %s %s",
-			minute,
-			hour,
-			dayOfMonth,
-			month,
-			dayOfWeek,
-		), cron.Locale_en)
-
+	description, err := m.naturalDescriptor.ToDescription(m.CronExpression(), cron.Locale_en)
 	if err != nil {
 		description = "???"
 	}
@@ -279,6 +246,41 @@ func (m *ScheduleModel) SetFocus(focus int) error {
 	}
 
 	return nil
+}
+
+func (m ScheduleModel) CronExpression() string {
+	minute := m.minuteInput.Value()
+	if minute == "" {
+		minute = "*"
+	}
+
+	hour := m.hourInput.Value()
+	if hour == "" {
+		hour = "*"
+	}
+
+	dayOfMonth := m.dayOfMonthInput.Value()
+	if dayOfMonth == "" {
+		dayOfMonth = "*"
+	}
+
+	month := m.monthInput.Value()
+	if month == "" {
+		month = "*"
+	}
+
+	dayOfWeek := m.dayOfWeekInput.Value()
+	if dayOfWeek == "" {
+		dayOfWeek = "*"
+	}
+
+	return fmt.Sprintf("%s %s %s %s %s",
+		minute,
+		hour,
+		dayOfMonth,
+		month,
+		dayOfWeek,
+	)
 }
 
 func createInputBar(m ScheduleModel, width int) string {

@@ -2,10 +2,12 @@ package layouts
 
 import (
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gorhill/cronexpr"
 
 	"github.com/schinwald/cronic/internal/styles"
 )
@@ -29,7 +31,7 @@ func (m NextOccurrenceModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m NextOccurrenceModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m NextOccurrenceModel) Update(msg tea.Msg) (NextOccurrenceModel, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	// Handle global update events such as closing the program
@@ -64,7 +66,7 @@ func (m NextOccurrenceModel) View() string {
 	paddingY, paddingX := 1, 5
 	headerBar := styles.PanelStyle("Next Occurrence", content.String(), 10, m.height, paddingY, paddingX)
 
-	progressBar := styles.BlockStyle(m.width - lipgloss.Width(headerBar) - 2, m.height)
+	progressBar := styles.BlockStyle(m.width-lipgloss.Width(headerBar)-2, m.height)
 
 	joined := lipgloss.JoinHorizontal(lipgloss.Top, headerBar, progressBar)
 	view.WriteString(joined)
@@ -75,4 +77,18 @@ func (m NextOccurrenceModel) View() string {
 func (m *NextOccurrenceModel) Size(width int, height int) {
 	m.width = width
 	m.height = height
+}
+
+func (m *NextOccurrenceModel) Calculate(cronExpression string) {
+	defer func() {
+		if recover() != nil {
+			m.date = "N/A"
+			m.time = "N/A"
+			return
+		}
+	}()
+
+	nextOccurrence := strings.Split(cronexpr.MustParse(cronExpression).Next(time.Now()).String(), " ")
+	m.date = nextOccurrence[0]
+	m.time = nextOccurrence[1]
 }

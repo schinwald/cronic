@@ -34,7 +34,7 @@ type AddModel struct {
 	err                 error
 }
 
-func OnFocus(l *layouts.LegendModel) func (int) error {
+func OnFocus(l *layouts.LegendModel) func(int) error {
 	return l.SetFocus
 }
 
@@ -102,6 +102,12 @@ func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 	m.legendPanel, cmd = m.legendPanel.Update(msg)
 	cmds = append(cmds, cmd)
 
+	m.nextOccurrencePanel, cmd = m.nextOccurrencePanel.Update(msg)
+	cmds = append(cmds, cmd)
+
+	cronExpression := m.schedulePanel.CronExpression()
+	m.nextOccurrencePanel.Calculate(cronExpression)
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -129,8 +135,8 @@ func (m AddModel) View() string {
 
 	if m.width >= 150 {
 		legendWidth := 70
-		m.schedulePanel.Size(m.width-(lipgloss.Width(gap)/2 + legendWidth), 15)
-		m.legendPanel.Size(legendWidth - lipgloss.Width(gap)/2, 15)
+		m.schedulePanel.Size(m.width-(lipgloss.Width(gap)/2+legendWidth), 15)
+		m.legendPanel.Size(legendWidth-lipgloss.Width(gap)/2, 15)
 		m.nextOccurrencePanel.Size(m.width, 4)
 		main = lipgloss.JoinHorizontal(lipgloss.Top, m.schedulePanel.View(), gap, m.legendPanel.View())
 		main = lipgloss.JoinVertical(lipgloss.Left, main, m.nextOccurrencePanel.View())
@@ -149,6 +155,7 @@ func (m AddModel) View() string {
 	view.WriteRune('\n')
 	view.WriteRune('\n')
 	view.WriteString(main)
+
 	return view.String()
 }
 
