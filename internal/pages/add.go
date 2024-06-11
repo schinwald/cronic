@@ -2,10 +2,13 @@ package pages
 
 import (
 	"errors"
+	"os"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gorhill/cronexpr"
 
 	"github.com/schinwald/cronic/internal/components"
 	"github.com/schinwald/cronic/internal/layouts"
@@ -240,6 +243,33 @@ func (m *AddModel) SetFocus(focus int) error {
 		m.schedulePanel.Focus()
 		return nil
 	}
+
+	return nil
+}
+
+func (m *AddModel) SaveCronJob() error {
+	file := m.fileInput.Value()
+	// description := m.descriptionInput.Value()
+	cronExpression := m.schedulePanel.CronExpression()
+
+	// Check to see if the cron expression is valid
+	defer func() error {
+		if recover() != nil {
+			return errors.New("bad cronjob expression")
+		}
+
+		return nil
+	}()
+
+	cronexpr.MustParse(cronExpression).Next(time.Now())
+
+	// Check to see the file exists
+	_, err := os.Stat(file)
+	if err != nil {
+		return errors.New("unable to find file")
+	}
+
+	// Create cronjob
 
 	return nil
 }
