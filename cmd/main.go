@@ -90,7 +90,6 @@ func (m windowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case list:
 		m.pages[list], cmd = m.pages[list].Update(msg)
 		cmds = append(cmds, cmd)
-		break
 	}
 
 	return m, tea.Batch(cmds...)

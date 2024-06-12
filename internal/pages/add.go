@@ -2,6 +2,7 @@ package pages
 
 import (
 	"errors"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/schinwald/cronic/internal/components"
 	"github.com/schinwald/cronic/internal/layouts"
 	"github.com/schinwald/cronic/internal/styles"
+	"github.com/schinwald/cronic/internal/utils"
 )
 
 const (
@@ -30,10 +32,13 @@ type AddModel struct {
 	width               int
 	height              int
 	commandInput        components.InputModel
+	userInput           components.InputModel
+	nameInput           components.InputModel
 	descriptionInput    components.InputModel
 	schedulePanel       layouts.ScheduleModel
 	legendPanel         *layouts.LegendModel
 	nextOccurrencePanel layouts.NextOccurrenceModel
+	cronjob             *utils.CronJob
 	err                 error
 }
 
@@ -58,6 +63,8 @@ func MakeAddModel() *AddModel {
 
 	nextOccurrencePanel := layouts.MakeNextOccurrenceModel()
 
+	cronjob := utils.MakeCronJob()
+
 	return &AddModel{
 		state:               command,
 		focus:               command,
@@ -66,6 +73,7 @@ func MakeAddModel() *AddModel {
 		schedulePanel:       schedulePanel,
 		legendPanel:         legendPanel,
 		nextOccurrencePanel: nextOccurrencePanel,
+		cronjob:             cronjob,
 	}
 }
 
@@ -76,6 +84,7 @@ func (m AddModel) Init() tea.Cmd {
 func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
+	var err error
 
 	// Handle global update events such as closing the program
 	switch msg := msg.(type) {
@@ -97,14 +106,26 @@ func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 	case command:
 		m.commandInput, cmd = m.commandInput.Update(msg)
 		cmds = append(cmds, cmd)
+
+		m.cronjob.Command(m.commandInput.Value())
 	case description:
 		m.descriptionInput, cmd = m.descriptionInput.Update(msg)
 		cmds = append(cmds, cmd)
+
+		m.cronjob.Description(m.descriptionInput.Value())
 	case schedule:
 		m.schedulePanel, cmd = m.schedulePanel.Update(msg)
-		cronExpression := m.schedulePanel.CronExpression()
-		m.nextOccurrencePanel.Calculate(cronExpression)
 		cmds = append(cmds, cmd)
+
+		err = m.cronjob.Expression(m.schedulePanel.CronExpression())
+		if err != nil {
+			m.schedulePanel.CronExplanation("")
+			m.nextOccurrencePanel.NextOccurrence(time.Time{})
+			break
+		}
+
+		m.schedulePanel.CronExplanation(m.cronjob.HumanReadable)
+		m.nextOccurrencePanel.NextOccurrence(m.cronjob.Next)
 	}
 
 	m.legendPanel, cmd = m.legendPanel.Update(msg)
@@ -169,22 +190,34 @@ func (m *AddModel) Size(width int, height int) {
 	m.height = height
 }
 
-func (m *AddModel) SubmitStep() error {
+func (m *AddModel) SubmitStep() bool {
+	var err error
+
 	switch m.state {
 	case command:
+		m.NextFocus()
 		m.state = description
-		m.NextFocus()
-		return nil
+		return true
 	case description:
+		m.NextFocus()
 		m.state = schedule
-		m.NextFocus()
-		return nil
+		return true
 	case schedule:
-		m.NextFocus()
-		return nil
+		isNextFocused := m.NextFocus()
+
+		if !isNextFocused {
+			err = m.cronjob.WriteCronJob()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			os.Exit(0)
+		}
+
+		return isNextFocused
 	}
 
-	return nil
+	return false
 }
 
 func (m *AddModel) Blur() error {
@@ -213,20 +246,20 @@ func (m *AddModel) PreviousFocus() error {
 	return nil
 }
 
-func (m *AddModel) NextFocus() error {
+func (m *AddModel) NextFocus() bool {
 	switch m.focus {
 	case command:
 		m.SetFocus(description)
-		return nil
+		return true
 	case description:
 		m.SetFocus(schedule)
-		return nil
+		return true
 	case schedule:
-		err := m.schedulePanel.NextFocus()
-		return err
+		isNextFocused := m.schedulePanel.NextFocus()
+		return isNextFocused
 	}
 
-	return nil
+	return false
 }
 
 func (m *AddModel) SetFocus(focus int) error {

@@ -7,24 +7,23 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/lnquy/cron"
 
 	"github.com/schinwald/cronic/internal/components"
 	"github.com/schinwald/cronic/internal/styles"
 )
 
 type ScheduleModel struct {
-	focus             int
-	focusCallback     func(int) error
-	width             int
-	height            int
-	naturalDescriptor *cron.ExpressionDescriptor
-	minuteInput       components.InputModel
-	hourInput         components.InputModel
-	dayOfMonthInput   components.InputModel
-	monthInput        components.InputModel
-	dayOfWeekInput    components.InputModel
-	err               error
+	focus           int
+	focusCallback   func(int) error
+	width           int
+	height          int
+	explanation     string
+	minuteInput     components.InputModel
+	hourInput       components.InputModel
+	dayOfMonthInput components.InputModel
+	monthInput      components.InputModel
+	dayOfWeekInput  components.InputModel
+	err             error
 }
 
 func defaultFocusCallback(focus int) error {
@@ -37,17 +36,15 @@ func MakeScheduleModel() ScheduleModel {
 	dayOfMonthInput := components.MakeInputModel()
 	monthInput := components.MakeInputModel()
 	dayOfWeekInput := components.MakeInputModel()
-	naturalDescriptor, _ := cron.NewDescriptor()
 
 	return ScheduleModel{
-		focus:             minute,
-		focusCallback:     defaultFocusCallback,
-		naturalDescriptor: naturalDescriptor,
-		minuteInput:       minuteInput,
-		hourInput:         hourInput,
-		dayOfMonthInput:   dayOfMonthInput,
-		monthInput:        monthInput,
-		dayOfWeekInput:    dayOfWeekInput,
+		focus:           minute,
+		focusCallback:   defaultFocusCallback,
+		minuteInput:     minuteInput,
+		hourInput:       hourInput,
+		dayOfMonthInput: dayOfMonthInput,
+		monthInput:      monthInput,
+		dayOfWeekInput:  dayOfWeekInput,
 	}
 }
 
@@ -67,43 +64,33 @@ func (m ScheduleModel) Update(msg tea.Msg) (ScheduleModel, tea.Cmd) {
 			switch m.focus {
 			case minute:
 				m.NextFocus()
-				break
 			case hour:
 				m.NextFocus()
-				break
 			case dayOfMonth:
 				m.NextFocus()
-				break
 			case month:
 				m.NextFocus()
-				break
 			case dayOfWeek:
-				break
 			}
 		case tea.KeyBackspace:
 			switch m.focus {
 			case minute:
-				break
 			case hour:
 				if m.hourInput.Value() == "" {
 					m.PreviousFocus()
 				}
-				break
 			case dayOfMonth:
 				if m.dayOfMonthInput.Value() == "" {
 					m.PreviousFocus()
 				}
-				break
 			case month:
 				if m.monthInput.Value() == "" {
 					m.PreviousFocus()
 				}
-				break
 			case dayOfWeek:
 				if m.dayOfWeekInput.Value() == "" {
 					m.PreviousFocus()
 				}
-				break
 			}
 		}
 	case error:
@@ -135,12 +122,7 @@ func (m ScheduleModel) View() string {
 
 	paddingY, paddingX := 0, 0
 
-	description, err := m.naturalDescriptor.ToDescription(m.CronExpression(), cron.Locale_en)
-	if err != nil {
-		description = "???"
-	}
-
-	naturalTextBar := lipgloss.NewStyle().Italic(true).Render(description)
+	naturalTextBar := lipgloss.NewStyle().Italic(true).Render(m.explanation)
 	inputBar := createInputBar(m, 12)
 	headerBar := createHeaderBar(m, 12)
 
@@ -194,25 +176,25 @@ func (m *ScheduleModel) PreviousFocus() error {
 	return nil
 }
 
-func (m *ScheduleModel) NextFocus() error {
+func (m *ScheduleModel) NextFocus() bool {
 	switch m.focus {
 	case minute:
 		m.SetFocus(hour)
-		return nil
+		return true
 	case hour:
 		m.SetFocus(dayOfMonth)
-		return nil
+		return true
 	case dayOfMonth:
 		m.SetFocus(month)
-		return nil
+		return true
 	case month:
 		m.SetFocus(dayOfWeek)
-		return nil
+		return true
 	case dayOfWeek:
-		return errors.New("done")
+		return false
 	}
 
-	return nil
+	return false
 }
 
 func (m *ScheduleModel) OnFocus(callback func(int) error) error {
@@ -281,6 +263,15 @@ func (m ScheduleModel) CronExpression() string {
 		month,
 		dayOfWeek,
 	)
+}
+
+func (m *ScheduleModel) CronExplanation(value string) {
+	if value == "" {
+		m.explanation = "???"
+		return
+	}
+
+	m.explanation = value
 }
 
 func createInputBar(m ScheduleModel, width int) string {

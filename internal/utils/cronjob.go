@@ -7,23 +7,97 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorhill/cronexpr"
+	"github.com/lnquy/cron"
 )
 
-type cronJob struct {
-	expression  string
-	time        cronexpr.Expression
-	user        string
-	command     string
-	tag         string
-	name        string
-	description string
+type CronJob struct {
+	HumanReadable       string
+	humanReadableEngine *cron.ExpressionDescriptor
+	Next                time.Time
+	expression          string
+	schedule            cronexpr.Expression
+	user                string
+	command             string
+	tag                 string
+	name                string
+	description         string
 }
 
-func LoadCronJobs() []cronJob {
-	var mergedCronJobs []cronJob
+func MakeCronJob() *CronJob {
+	humanReadableEngine, err := cron.NewDescriptor()
+	if err != nil {
+		log.Fatal("cannot add human readable engine to cronjob")
+	}
+
+	return &CronJob{
+		humanReadableEngine: humanReadableEngine,
+	}
+}
+
+func (c *CronJob) Expression(value string) error {
+	schedule, err := cronexpr.Parse(value)
+	if err != nil {
+		return err
+	}
+
+	humanReadable, err := c.humanReadableEngine.ToDescription(value, cron.Locale_en)
+	if err != nil {
+		return err
+	}
+
+	c.expression = value
+	c.schedule = *schedule
+	c.Next = schedule.Next(time.Now())
+	c.HumanReadable = humanReadable
+
+	return nil
+}
+
+func (c *CronJob) User(value string) {
+	c.user = value
+}
+
+func (c *CronJob) Command(value string) {
+	c.command = value
+}
+
+func (c *CronJob) Tag(value string) {
+	c.tag = value
+}
+
+func (c *CronJob) Name(value string) {
+	c.name = value
+}
+
+func (c *CronJob) Description(value string) {
+	c.description = value
+}
+
+func (c CronJob) String() string {
+	return fmt.Sprintf("%s %s %s\t\t# %s - Name: %s, Description: %s",
+		c.expression,
+		c.name,
+		c.command,
+		c.tag,
+		c.name,
+		c.description,
+	)
+}
+
+func UnmarkedRegularExpression() *regexp.Regexp {
+	return regexp.MustCompile(`([^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+)\s+([^\s]+)\s+(.+)`)
+}
+
+func MarkedRegularExpression() *regexp.Regexp {
+	return regexp.MustCompile(`([^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+)\s+([^\s]+)\s+(.+)\s+# (CRONIC-[^\s]+)\s+-\s+Name:\s([^\s]+),\s+Description:\s([^\s]+)`)
+}
+
+func LoadCronJobs() []CronJob {
+	var mergedCronJobs []CronJob
 
 	// Open cron file with resource clean up
 	file, err := os.OpenFile("/etc/crontab", os.O_RDWR|os.O_SYNC, 0)
@@ -46,7 +120,35 @@ func LoadCronJobs() []cronJob {
 	return mergedCronJobs
 }
 
-func fixBadCronJobs(file *os.File, content []string, badCronJobs map[int]cronJob) map[int]cronJob {
+func (c CronJob) WriteCronJob() error {
+	var err error
+
+	// Open cron file with resource clean up
+	file, err := os.OpenFile("/etc/crontab", os.O_APPEND|os.O_WRONLY|os.O_SYNC, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	file.Seek(0, 2)
+	writer := bufio.NewWriter(file)
+
+	// Write cronjob to the system wide file
+	_, err = writer.WriteString(fmt.Sprintf("\n%s", c.String()))
+	if err != nil {
+		return err
+	}
+
+	// Flush the cronjob
+	err = writer.Flush()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func fixBadCronJobs(file *os.File, content []string, badCronJobs map[int]CronJob) map[int]CronJob {
 	var err error
 
 	// Prompt the user to reconcile bad cron jobs
@@ -58,14 +160,7 @@ func fixBadCronJobs(file *os.File, content []string, badCronJobs map[int]cronJob
 		badCronJob.description = "description"
 
 		// Update content in memory
-		content[i] = fmt.Sprintf("%s %s %s\t\t# %s - Name: %s, Description: %s",
-			badCronJob.expression,
-			badCronJob.name,
-			badCronJob.command,
-			badCronJob.tag,
-			badCronJob.name,
-			badCronJob.description,
-		)
+		content[i] = badCronJob.String()
 
 		// Seek to beginning of file
 		_, err = file.Seek(0, 0)
@@ -91,13 +186,13 @@ func fixBadCronJobs(file *os.File, content []string, badCronJobs map[int]cronJob
 	return badCronJobs
 }
 
-func scanCronJobs(file *os.File) ([]string, map[int]cronJob, map[int]cronJob) {
+func scanCronJobs(file *os.File) ([]string, map[int]CronJob, map[int]CronJob) {
 	var content []string
-	goodCronJobs := make(map[int]cronJob)
-	badCronJobs := make(map[int]cronJob)
+	goodCronJobs := make(map[int]CronJob)
+	badCronJobs := make(map[int]CronJob)
 
-	unmarkedJobRegularExpression := regexp.MustCompile(`([^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+)\s+([^\s]+)\s+(.+)`)
-	markedJobRegularExpression := regexp.MustCompile(`([^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+)\s+([^\s]+)\s+(.+)\s+# (CRONIC-[^\s]+)\s+-\s+Name:\s([^\s]+),\s+Description:\s([^\s]+)`)
+	unmarkedJobRegularExpression := UnmarkedRegularExpression()
+	markedJobRegularExpression := MarkedRegularExpression()
 	whiteSpaceRegularExpression := regexp.MustCompile(`\s+`)
 
 	// Read contents of cron file
@@ -129,9 +224,9 @@ func scanCronJobs(file *os.File) ([]string, map[int]cronJob, map[int]cronJob) {
 					}
 
 					// Add job to jobs map so that we can keep track of it
-					goodCronJobs[lineNumber] = cronJob{
+					goodCronJobs[lineNumber] = CronJob{
 						expression:  expression,
-						time:        *time,
+						schedule:    *time,
 						user:        user,
 						command:     command,
 						tag:         tag,
@@ -159,9 +254,9 @@ func scanCronJobs(file *os.File) ([]string, map[int]cronJob, map[int]cronJob) {
 					}
 
 					// Add job to jobs map so that we can keep track of it
-					badCronJobs[lineNumber] = cronJob{
+					badCronJobs[lineNumber] = CronJob{
 						expression: expression,
-						time:       *time,
+						schedule:   *time,
 						user:       user,
 						command:    command,
 					}

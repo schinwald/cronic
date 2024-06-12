@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/gorhill/cronexpr"
 
 	"github.com/schinwald/cronic/internal/styles"
 )
@@ -79,16 +78,14 @@ func (m *NextOccurrenceModel) Size(width int, height int) {
 	m.height = height
 }
 
-func (m *NextOccurrenceModel) Calculate(cronExpression string) {
-	defer func() {
-		if recover() != nil {
-			m.date = "N/A"
-			m.time = "N/A"
-			return
-		}
-	}()
+func (m *NextOccurrenceModel) NextOccurrence(time time.Time) {
+	if time.IsZero() {
+		m.date = "N/A"
+		m.time = "N/A"
+		return
+	}
 
-	nextOccurrence := strings.Split(cronexpr.MustParse(cronExpression).Next(time.Now()).String(), " ")
+	nextOccurrence := strings.Split(time.String(), " ")
 	m.date = nextOccurrence[0]
 	m.time = nextOccurrence[1]
 }

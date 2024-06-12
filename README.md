@@ -4,7 +4,7 @@
 
 ## Features
 - [ ] Manage jobs
-- [ ] Validate cronjob format
+- [ ] Validate cronjobs
 - [ ] Monitor existing cronjobs
 - [ ] Manually run jobs
 - [ ] Dry run jobs

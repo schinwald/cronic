@@ -105,25 +105,25 @@ func (m *LegendModel) PreviousFocus() error {
 	return nil
 }
 
-func (m *LegendModel) NextFocus() error {
+func (m *LegendModel) NextFocus() bool {
 	switch m.focus {
 	case minute:
 		m.SetFocus(hour)
-		return nil
+		return true
 	case hour:
 		m.SetFocus(dayOfMonth)
-		return nil
+		return true
 	case dayOfMonth:
 		m.SetFocus(month)
-		return nil
+		return true
 	case month:
 		m.SetFocus(dayOfWeek)
-		return nil
+		return true
 	case dayOfWeek:
-		return errors.New("done")
+		return false
 	}
 
-	return nil
+	return false
 }
 
 func (m *LegendModel) SetFocus(focus int) error {
@@ -165,7 +165,7 @@ func createMinuteLegend() string {
 	columnWidths[descriptions] = 20
 	columnJustification[descriptions] = lipgloss.Left
 	columns[descriptions] = lipgloss.JoinVertical(lipgloss.Left,
-		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs],	"Every minute"),
+		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "Every minute"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "At minute x, y, (and ...)"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "Between x and y"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "At minute x and every y minutes after"),
@@ -218,7 +218,7 @@ func createHourLegend() string {
 	columnWidths[descriptions] = 25
 	columnJustification[descriptions] = lipgloss.Left
 	columns[descriptions] = lipgloss.JoinVertical(lipgloss.Left,
-		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs],	"Every minute"),
+		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "Every minute"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "At minute x, y, (and ...)"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "Between x and y"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "At minute x and every y minutes after"),
@@ -271,7 +271,7 @@ func createDayOfMonthLegend() string {
 	columnWidths[descriptions] = 20
 	columnJustification[descriptions] = lipgloss.Left
 	columns[descriptions] = lipgloss.JoinVertical(lipgloss.Left,
-		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs],	"Every day of the month"),
+		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "Every day of the month"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "On day x, y, (and ...) of the month"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "Between day x and y of the month"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "On day x of the month and every y day(s) after"),
@@ -325,7 +325,7 @@ func createMonthLegend() string {
 	columnWidths[descriptions] = 25
 	columnJustification[descriptions] = lipgloss.Left
 	columns[descriptions] = lipgloss.JoinVertical(lipgloss.Left,
-		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs],	"Every month"),
+		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "Every month"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "On month x, y, (and ...)"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "Between month x and y"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "On month x and every y months after"),
@@ -380,7 +380,7 @@ func createDayOfWeekLegend() string {
 	columnWidths[descriptions] = 20
 	columnJustification[descriptions] = lipgloss.Left
 	columns[descriptions] = lipgloss.JoinVertical(lipgloss.Left,
-		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs],	"Every day of the week"),
+		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "Every day of the week"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "On day x, y, (and ...) of the week"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "Between day x and y of the week"),
 		lipgloss.PlaceHorizontal(columnWidths[inputs], columnJustification[inputs], "On day x of the week and every y day(s) after"),
