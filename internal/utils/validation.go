@@ -1,8 +1,5 @@
 package utils
 
-import (
-)
-
 // Validates the day of week input
 func InputValidator(s string) error {
 	return nil
@@ -32,4 +29,3 @@ func MonthValidator(s string) error {
 func DayOfWeekValidator(s string) error {
 	return nil
 }
-

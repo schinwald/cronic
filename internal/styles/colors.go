@@ -7,30 +7,30 @@ import (
 )
 
 var (
-	Black = "0"
-	Red = "1"
-	Green = "2"
-	Yellow = "3"
-	Blue = "4"
-	Magenta = "5"
-	Cyan = "6"
-	White = "7"
-	BrightBlack = "8"
-	BrightRed = "9"
-	BrightGreen = "10"
-	BrightYellow = "11"
-	BrightBlue = "12"
+	Black         = "0"
+	Red           = "1"
+	Green         = "2"
+	Yellow        = "3"
+	Blue          = "4"
+	Magenta       = "5"
+	Cyan          = "6"
+	White         = "7"
+	BrightBlack   = "8"
+	BrightRed     = "9"
+	BrightGreen   = "10"
+	BrightYellow  = "11"
+	BrightBlue    = "12"
 	BrightMagenta = "13"
-	BrightCyan = "14"
-	BrightWhite = "15"
+	BrightCyan    = "14"
+	BrightWhite   = "15"
 )
 
 var (
-	PrimaryColor    = lipgloss.Color(Green)
-	SecondaryColor  = lipgloss.Color(BrightBlack)
-	ForegroundColor = lipgloss.Color(White)
+	PrimaryColor          = lipgloss.Color(Green)
+	SecondaryColor        = lipgloss.Color(BrightBlack)
+	ForegroundColor       = lipgloss.Color(White)
 	DimmedForegroundColor = lipgloss.Color(BrightBlack)
-	BorderStyle     = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(DimmedForegroundColor)
+	BorderStyle           = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(DimmedForegroundColor)
 )
 
 func BlockStyle(width int, height int) string {
@@ -39,14 +39,14 @@ func BlockStyle(width int, height int) string {
 	blockStyle := lipgloss.NewStyle().
 		Border(lipgloss.BlockBorder()).
 		Border(lipgloss.Border{
-			Top: "▅",
-			Bottom: "🮄",
-			Left: "█",
-			Right: "█",
-			TopRight: "▅",
+			Top:         "▅",
+			Bottom:      "🮄",
+			Left:        "█",
+			Right:       "█",
+			TopRight:    "▅",
 			BottomRight: "🮄",
-			TopLeft: "▅",
-			BottomLeft: "🮄",
+			TopLeft:     "▅",
+			BottomLeft:  "🮄",
 		}).
 		Width(width).
 		Height(height).
@@ -72,8 +72,8 @@ func PanelStyle(title string, content string, width int, height int, paddingY in
 		BorderBottom(true).
 		BorderLeft(true).
 		BorderForeground(DimmedForegroundColor).
-		Width(width - 2).
-		Height(height - 1).
+		Width(width-2).
+		Height(height-1).
 		Padding(paddingY, paddingX).
 		Render(content)
 
