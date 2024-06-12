@@ -3,6 +3,8 @@
 ## Description
 
 ## Features
-- [ ] Add cronjobs
+- [ ] Manage jobs
 - [ ] Validate cronjob format
 - [ ] Monitor existing cronjobs
+- [ ] Manually run jobs
+- [ ] Dry run jobs

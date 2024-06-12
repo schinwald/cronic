@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	file = iota
+	command = iota
 	description
 	schedule
 	legend
@@ -29,7 +29,7 @@ type AddModel struct {
 	focus               int
 	width               int
 	height              int
-	fileInput           components.InputModel
+	commandInput        components.InputModel
 	descriptionInput    components.InputModel
 	schedulePanel       layouts.ScheduleModel
 	legendPanel         *layouts.LegendModel
@@ -42,9 +42,9 @@ func OnFocus(l *layouts.LegendModel) func(int) error {
 }
 
 func MakeAddModel() *AddModel {
-	fileInput := components.MakeInputModel()
-	fileInput.Focus()
-	fileInput.Placeholder("./dishes")
+	commandInput := components.MakeInputModel()
+	commandInput.Focus()
+	commandInput.Placeholder("./dishes")
 
 	descriptionInput := components.MakeInputModel()
 	descriptionInput.Placeholder("Reminder to clean the dishes")
@@ -59,9 +59,9 @@ func MakeAddModel() *AddModel {
 	nextOccurrencePanel := layouts.MakeNextOccurrenceModel()
 
 	return &AddModel{
-		state:               file,
-		focus:               file,
-		fileInput:           fileInput,
+		state:               command,
+		focus:               command,
+		commandInput:        commandInput,
 		descriptionInput:    descriptionInput,
 		schedulePanel:       schedulePanel,
 		legendPanel:         legendPanel,
@@ -93,23 +93,25 @@ func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 		return m, nil
 	}
 
-	m.fileInput, cmd = m.fileInput.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.descriptionInput, cmd = m.descriptionInput.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.schedulePanel, cmd = m.schedulePanel.Update(msg)
-	cmds = append(cmds, cmd)
+	switch m.state {
+	case command:
+		m.commandInput, cmd = m.commandInput.Update(msg)
+		cmds = append(cmds, cmd)
+	case description:
+		m.descriptionInput, cmd = m.descriptionInput.Update(msg)
+		cmds = append(cmds, cmd)
+	case schedule:
+		m.schedulePanel, cmd = m.schedulePanel.Update(msg)
+		cronExpression := m.schedulePanel.CronExpression()
+		m.nextOccurrencePanel.Calculate(cronExpression)
+		cmds = append(cmds, cmd)
+	}
 
 	m.legendPanel, cmd = m.legendPanel.Update(msg)
 	cmds = append(cmds, cmd)
 
 	m.nextOccurrencePanel, cmd = m.nextOccurrencePanel.Update(msg)
 	cmds = append(cmds, cmd)
-
-	cronExpression := m.schedulePanel.CronExpression()
-	m.nextOccurrencePanel.Calculate(cronExpression)
 
 	return m, tea.Batch(cmds...)
 }
@@ -121,9 +123,9 @@ func (m AddModel) View() string {
 
 	titleStyle := lipgloss.NewStyle().Foreground(styles.PrimaryColor)
 
-	view.WriteString(titleStyle.Render("Program: "))
-	view.WriteString(m.fileInput.View())
-	if m.state == file {
+	view.WriteString(titleStyle.Render("Command: "))
+	view.WriteString(m.commandInput.View())
+	if m.state == command {
 		return view.String()
 	}
 
@@ -169,7 +171,7 @@ func (m *AddModel) Size(width int, height int) {
 
 func (m *AddModel) SubmitStep() error {
 	switch m.state {
-	case file:
+	case command:
 		m.state = description
 		m.NextFocus()
 		return nil
@@ -186,7 +188,7 @@ func (m *AddModel) SubmitStep() error {
 }
 
 func (m *AddModel) Blur() error {
-	m.fileInput.Blur()
+	m.commandInput.Blur()
 	m.descriptionInput.Blur()
 	m.schedulePanel.Blur()
 
@@ -195,10 +197,10 @@ func (m *AddModel) Blur() error {
 
 func (m *AddModel) PreviousFocus() error {
 	switch m.focus {
-	case file:
+	case command:
 		return errors.New("done")
 	case description:
-		m.SetFocus(file)
+		m.SetFocus(command)
 		return nil
 	case schedule:
 		err := m.schedulePanel.PreviousFocus()
@@ -213,7 +215,7 @@ func (m *AddModel) PreviousFocus() error {
 
 func (m *AddModel) NextFocus() error {
 	switch m.focus {
-	case file:
+	case command:
 		m.SetFocus(description)
 		return nil
 	case description:
@@ -233,8 +235,8 @@ func (m *AddModel) SetFocus(focus int) error {
 	m.Blur()
 
 	switch focus {
-	case file:
-		m.fileInput.Focus()
+	case command:
+		m.commandInput.Focus()
 		return nil
 	case description:
 		m.descriptionInput.Focus()
@@ -248,7 +250,7 @@ func (m *AddModel) SetFocus(focus int) error {
 }
 
 func (m *AddModel) SaveCronJob() error {
-	file := m.fileInput.Value()
+	file := m.commandInput.Value()
 	// description := m.descriptionInput.Value()
 	cronExpression := m.schedulePanel.CronExpression()
 
