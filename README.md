@@ -9,3 +9,4 @@
 - [ ] Manually run jobs
 - [ ] Dry run jobs
 - [ ] Listen to cronjob files
+- [ ] Custom keybindings

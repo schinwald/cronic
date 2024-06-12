@@ -1,7 +1,6 @@
 package layouts
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -58,22 +57,17 @@ func (m LegendModel) View() string {
 	switch m.focus {
 	case minute:
 		content.WriteString(createMinuteLegend())
-		break
 	case hour:
 		content.WriteString(createHourLegend())
-		break
 	case dayOfMonth:
 		content.WriteString(createDayOfMonthLegend())
-		break
 	case month:
 		content.WriteString(createMonthLegend())
-		break
 	case dayOfWeek:
 		content.WriteString(createDayOfWeekLegend())
-		break
 	}
 
-	paddingY, paddingX := 2, 5
+	paddingY, paddingX := 1, 3
 	view.WriteString(styles.PanelStyle("Legend", content.String(), m.width, m.height, paddingY, paddingX))
 
 	return view.String()
@@ -84,25 +78,25 @@ func (m *LegendModel) Size(width int, height int) {
 	m.height = height
 }
 
-func (m *LegendModel) PreviousFocus() error {
+func (m *LegendModel) PreviousFocus() bool {
 	switch m.focus {
 	case minute:
-		return errors.New("done")
+		return false
 	case hour:
 		m.SetFocus(minute)
-		return nil
+		return true
 	case dayOfMonth:
 		m.SetFocus(hour)
-		return nil
+		return true
 	case month:
 		m.SetFocus(dayOfMonth)
-		return nil
+		return true
 	case dayOfWeek:
 		m.SetFocus(month)
-		return nil
+		return true
 	}
 
-	return nil
+	return false
 }
 
 func (m *LegendModel) NextFocus() bool {
@@ -133,7 +127,7 @@ func (m *LegendModel) SetFocus(focus int) error {
 }
 
 func createMinuteLegend() string {
-	var content strings.Builder
+	var view strings.Builder
 
 	headerStyle := lipgloss.NewStyle().Underline(true)
 	bodyStyle := lipgloss.NewStyle().Faint(true)
@@ -141,7 +135,6 @@ func createMinuteLegend() string {
 	var header strings.Builder
 
 	header.WriteString("minute")
-	header.WriteRune('\n')
 
 	const (
 		inputs = iota
@@ -177,16 +170,17 @@ func createMinuteLegend() string {
 		columns[descriptions],
 	)
 
-	content.WriteString(headerStyle.Render(header.String()))
-	content.WriteRune('\n')
-	content.WriteString(bodyStyle.Render(table))
-	content.WriteRune('\n')
+	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
+		headerStyle.Render(header.String()),
+		"",
+		bodyStyle.Render(table),
+	))
 
-	return content.String()
+	return view.String()
 }
 
 func createHourLegend() string {
-	var content strings.Builder
+	var view strings.Builder
 
 	headerStyle := lipgloss.NewStyle().Underline(true)
 	bodyStyle := lipgloss.NewStyle().Faint(true)
@@ -194,7 +188,6 @@ func createHourLegend() string {
 	var header strings.Builder
 
 	header.WriteString("hour")
-	header.WriteRune('\n')
 
 	const (
 		inputs = iota
@@ -230,16 +223,17 @@ func createHourLegend() string {
 		columns[descriptions],
 	)
 
-	content.WriteString(headerStyle.Render(header.String()))
-	content.WriteRune('\n')
-	content.WriteString(bodyStyle.Render(table))
-	content.WriteRune('\n')
+	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
+		headerStyle.Render(header.String()),
+		"",
+		bodyStyle.Render(table),
+	))
 
-	return content.String()
+	return view.String()
 }
 
 func createDayOfMonthLegend() string {
-	var content strings.Builder
+	var view strings.Builder
 
 	headerStyle := lipgloss.NewStyle().Underline(true)
 	bodyStyle := lipgloss.NewStyle().Faint(true)
@@ -247,7 +241,6 @@ func createDayOfMonthLegend() string {
 	var header strings.Builder
 
 	header.WriteString("day of month")
-	header.WriteRune('\n')
 
 	const (
 		inputs = iota
@@ -283,16 +276,17 @@ func createDayOfMonthLegend() string {
 		columns[descriptions],
 	)
 
-	content.WriteString(headerStyle.Render(header.String()))
-	content.WriteRune('\n')
-	content.WriteString(bodyStyle.Render(table))
-	content.WriteRune('\n')
+	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
+		headerStyle.Render(header.String()),
+		"",
+		bodyStyle.Render(table),
+	))
 
-	return content.String()
+	return view.String()
 }
 
 func createMonthLegend() string {
-	var content strings.Builder
+	var view strings.Builder
 
 	headerStyle := lipgloss.NewStyle().Underline(true)
 	bodyStyle := lipgloss.NewStyle().Faint(true)
@@ -300,7 +294,6 @@ func createMonthLegend() string {
 	var header strings.Builder
 
 	header.WriteString("month")
-	header.WriteRune('\n')
 
 	const (
 		inputs = iota
@@ -338,16 +331,17 @@ func createMonthLegend() string {
 		columns[descriptions],
 	)
 
-	content.WriteString(headerStyle.Render(header.String()))
-	content.WriteRune('\n')
-	content.WriteString(bodyStyle.Render(table))
-	content.WriteRune('\n')
+	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
+		headerStyle.Render(header.String()),
+		"",
+		bodyStyle.Render(table),
+	))
 
-	return content.String()
+	return view.String()
 }
 
 func createDayOfWeekLegend() string {
-	var content strings.Builder
+	var view strings.Builder
 
 	headerStyle := lipgloss.NewStyle().Underline(true)
 	bodyStyle := lipgloss.NewStyle().Faint(true)
@@ -355,7 +349,6 @@ func createDayOfWeekLegend() string {
 	var header strings.Builder
 
 	header.WriteString("day of week")
-	header.WriteRune('\n')
 
 	const (
 		inputs = iota
@@ -393,10 +386,11 @@ func createDayOfWeekLegend() string {
 		columns[descriptions],
 	)
 
-	content.WriteString(headerStyle.Render(header.String()))
-	content.WriteRune('\n')
-	content.WriteString(bodyStyle.Render(table))
-	content.WriteRune('\n')
+	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
+		headerStyle.Render(header.String()),
+		"",
+		bodyStyle.Render(table),
+	))
 
-	return content.String()
+	return view.String()
 }

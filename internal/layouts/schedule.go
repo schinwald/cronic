@@ -1,7 +1,6 @@
 package layouts
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -120,14 +119,14 @@ func (m ScheduleModel) View() string {
 	var view strings.Builder
 	var content string
 
-	paddingY, paddingX := 0, 0
+	paddingY, paddingX := 1, 3
 
+	inputBar := createInputBar(m, 11)
+	headerBar := createHeaderBar(m, 11)
 	naturalTextBar := lipgloss.NewStyle().Italic(true).Render(m.explanation)
-	inputBar := createInputBar(m, 12)
-	headerBar := createHeaderBar(m, 12)
 
-	content = lipgloss.JoinVertical(lipgloss.Center, naturalTextBar, "", inputBar, headerBar)
-	content = lipgloss.Place(m.width-2, m.height-2, lipgloss.Center, lipgloss.Center, content)
+	content = lipgloss.JoinVertical(lipgloss.Left, naturalTextBar, "", inputBar, headerBar)
+	content = lipgloss.Place(m.width-2, m.height-2, lipgloss.Top, lipgloss.Left, content)
 
 	view.WriteString(styles.PanelStyle("Schedule", content, m.width, m.height, paddingY, paddingX))
 
@@ -155,25 +154,25 @@ func (m *ScheduleModel) Blur() error {
 	return nil
 }
 
-func (m *ScheduleModel) PreviousFocus() error {
+func (m *ScheduleModel) PreviousFocus() bool {
 	switch m.focus {
 	case minute:
-		return errors.New("done")
+		return false
 	case hour:
 		m.SetFocus(minute)
-		return nil
+		return true
 	case dayOfMonth:
 		m.SetFocus(hour)
-		return nil
+		return true
 	case month:
 		m.SetFocus(dayOfMonth)
-		return nil
+		return true
 	case dayOfWeek:
 		m.SetFocus(month)
-		return nil
+		return true
 	}
 
-	return nil
+	return false
 }
 
 func (m *ScheduleModel) NextFocus() bool {

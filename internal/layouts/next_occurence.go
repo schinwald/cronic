@@ -62,8 +62,8 @@ func (m NextOccurrenceModel) View() string {
 	content.WriteString(headerStyle.Render("Time: "))
 	content.WriteString(bodyStyle.Render(m.time))
 
-	paddingY, paddingX := 1, 5
-	headerBar := styles.PanelStyle("Next Occurrence", content.String(), 10, m.height, paddingY, paddingX)
+	paddingY, paddingX := 1, 3
+	headerBar := styles.PanelStyle("First Occurrence", content.String(), 24, m.height, paddingY, paddingX)
 
 	progressBar := styles.BlockStyle(m.width-lipgloss.Width(headerBar)-2, m.height)
 
