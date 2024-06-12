@@ -31,7 +31,7 @@ type AddModel struct {
 	focus               int
 	width               int
 	height              int
-	userInput           components.InputModel
+	userList            components.ListModel
 	commandInput        components.InputModel
 	nameInput           components.InputModel
 	descriptionInput    components.InputModel
@@ -48,9 +48,14 @@ func OnFocus(l *layouts.LegendModel) func(int) error {
 }
 
 func MakeAddModel() *AddModel {
-	userInput := components.MakeInputModel()
-	userInput.Focus()
-	userInput.Placeholder("root")
+	items := []string{
+		"root",
+		"a",
+		"b",
+		"c",
+	}
+
+	userList := components.MakeListModel(items)
 
 	commandInput := components.MakeInputModel()
 	commandInput.Placeholder("./dishes")
@@ -78,7 +83,7 @@ func MakeAddModel() *AddModel {
 	return &AddModel{
 		state:               user,
 		focus:               user,
-		userInput:           userInput,
+		userList:            userList,
 		commandInput:        commandInput,
 		nameInput:           nameInput,
 		descriptionInput:    descriptionInput,
@@ -115,31 +120,34 @@ func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 		return m, nil
 	}
 
+	m.userList, cmd = m.userList.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.commandInput, cmd = m.commandInput.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.nameInput, cmd = m.nameInput.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.descriptionInput, cmd = m.descriptionInput.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.schedulePanel, cmd = m.schedulePanel.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.confirmationInput, cmd = m.confirmationInput.Update(msg)
+	cmds = append(cmds, cmd)
+
 	switch m.state {
 	case user:
-		m.userInput, cmd = m.userInput.Update(msg)
-		cmds = append(cmds, cmd)
-
-		m.cronjob.User(m.userInput.Value())
+		m.cronjob.User(m.userList.Value())
 	case command:
-		m.commandInput, cmd = m.commandInput.Update(msg)
-		cmds = append(cmds, cmd)
-
 		m.cronjob.Command(m.commandInput.Value())
 	case name:
-		m.nameInput, cmd = m.nameInput.Update(msg)
-		cmds = append(cmds, cmd)
-
 		m.cronjob.Name(m.nameInput.Value())
 	case description:
-		m.descriptionInput, cmd = m.descriptionInput.Update(msg)
-		cmds = append(cmds, cmd)
-
 		m.cronjob.Description(m.descriptionInput.Value())
 	case schedule:
-		m.schedulePanel, cmd = m.schedulePanel.Update(msg)
-		cmds = append(cmds, cmd)
-
 		err = m.cronjob.Expression(m.schedulePanel.CronExpression())
 		if err != nil {
 			m.schedulePanel.CronExplanation("")
@@ -150,8 +158,6 @@ func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 		m.schedulePanel.CronExplanation(m.cronjob.HumanReadable)
 		m.nextOccurrencePanel.NextOccurrence(m.cronjob.Next)
 	case confirmation:
-		m.confirmationInput, cmd = m.confirmationInput.Update(msg)
-		cmds = append(cmds, cmd)
 	}
 
 	m.legendPanel, cmd = m.legendPanel.Update(msg)
@@ -170,7 +176,7 @@ func (m AddModel) View() string {
 
 	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
 		titleStyle.Render("Who do you want to run this command?"),
-		fmt.Sprintf("> %s", m.userInput.View()),
+		m.userList.View(),
 		"",
 	))
 	if m.state == user {
@@ -285,7 +291,7 @@ func (m *AddModel) SubmitStep() bool {
 }
 
 func (m *AddModel) Blur() error {
-	m.userInput.Blur()
+	m.userList.Blur()
 	m.commandInput.Blur()
 	m.nameInput.Blur()
 	m.descriptionInput.Blur()
@@ -358,7 +364,7 @@ func (m *AddModel) SetFocus(focus int) error {
 
 	switch focus {
 	case user:
-		m.userInput.Focus()
+		m.userList.Focus()
 		return nil
 	case command:
 		m.commandInput.Focus()
