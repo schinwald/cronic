@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bufio"
+	"container/heap"
 	"fmt"
 	"log"
 	"os"
@@ -88,38 +89,6 @@ func (c CronJob) String() string {
 	)
 }
 
-func UnmarkedRegularExpression() *regexp.Regexp {
-	return regexp.MustCompile(`([^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+)\s+([^\s]+)\s+(.+)`)
-}
-
-func MarkedRegularExpression() *regexp.Regexp {
-	return regexp.MustCompile(`([^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+)\s+([^\s]+)\s+(.+)\s+# (CRONIC-[^\s]+)\s+-\s+Name:\s([^\s]+),\s+Description:\s([^\s]+)`)
-}
-
-func LoadCronJobs() []CronJob {
-	var mergedCronJobs []CronJob
-
-	// Open cron file with resource clean up
-	file, err := os.OpenFile("/etc/crontab", os.O_RDWR|os.O_SYNC, 0)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	content, goodCronJobs, badCronJobs := scanCronJobs(file)
-	fixedCronJobs := fixBadCronJobs(file, content, badCronJobs)
-
-	for i := range goodCronJobs {
-		mergedCronJobs = append(mergedCronJobs, goodCronJobs[i])
-	}
-
-	for i := range fixedCronJobs {
-		mergedCronJobs = append(mergedCronJobs, fixedCronJobs[i])
-	}
-
-	return mergedCronJobs
-}
-
 func (c CronJob) WriteCronJob() error {
 	var err error
 
@@ -146,6 +115,104 @@ func (c CronJob) WriteCronJob() error {
 	}
 
 	return nil
+}
+
+func unmarkedJobRegularExpression() *regexp.Regexp {
+	return regexp.MustCompile(`([^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+)\s+([^\s]+)\s+(.+)`)
+}
+
+func markedJobRegularExpression() *regexp.Regexp {
+	return regexp.MustCompile(`([^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+\s+[^\s]+)\s+([^\s]+)\s+(.+)\s+# (CRONIC-[^\s]+)\s+-\s+Name:\s([^\s]+),\s+Description:\s([^\s]+)`)
+}
+
+func passwdRegularExpression() *regexp.Regexp {
+	return regexp.MustCompile(`(.*):(.*):(.*):(.*):(.*):(.*):(.*)`)
+}
+
+func LoadCronJobs() []CronJob {
+	var mergedCronJobs []CronJob
+
+	// Open cron file with resource clean up
+	file, err := os.OpenFile("/etc/crontab", os.O_RDWR|os.O_SYNC, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	content, goodCronJobs, badCronJobs := scanCronJobs(file)
+	fixedCronJobs := fixBadCronJobs(file, content, badCronJobs)
+
+	for i := range goodCronJobs {
+		mergedCronJobs = append(mergedCronJobs, goodCronJobs[i])
+	}
+
+	for i := range fixedCronJobs {
+		mergedCronJobs = append(mergedCronJobs, fixedCronJobs[i])
+	}
+
+	return mergedCronJobs
+}
+
+func GetAllUsers() []string {
+	var users []string
+	queue := make(PriorityQueue, 0)
+
+	passwdRegularExpression := passwdRegularExpression()
+	rootRegularExpression := regexp.MustCompile("/root")
+	homeRegularExpression := regexp.MustCompile("/home")
+
+	// Open cron file with resource clean up
+	file, err := os.OpenFile("/etc/passwd", os.O_RDONLY|os.O_SYNC, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	reader := bufio.NewReader(file)
+	line, isPrefix, err := reader.ReadLine()
+	lineNumber := 0
+
+	for err == nil {
+		if isPrefix {
+			log.Fatal("line is too long to parse cronjobs")
+		}
+
+		passwdMatch := passwdRegularExpression.FindStringSubmatch(string(line))
+
+		if len(passwdMatch) != 0 {
+			user := passwdMatch[1]
+			directory := passwdMatch[6]
+
+			priority := 0
+
+			homeDirectory := homeRegularExpression.FindStringSubmatch(string(directory))
+			if len(homeDirectory) != 0 {
+				priority = 50
+			}
+
+			rootDirectory := rootRegularExpression.FindStringSubmatch(string(directory))
+			if len(rootDirectory) != 0 {
+				priority = 100
+			}
+
+			item := &PriorityItem{
+				value:    user,
+				priority: priority,
+			}
+
+			heap.Push(&queue, item)
+		}
+
+		line, isPrefix, err = reader.ReadLine()
+		lineNumber++
+	}
+
+	for queue.Len() != 0 {
+		item := heap.Pop(&queue).(*PriorityItem)
+		users = append(users, item.value)
+	}
+
+	return users
 }
 
 func fixBadCronJobs(file *os.File, content []string, badCronJobs map[int]CronJob) map[int]CronJob {
@@ -191,8 +258,8 @@ func scanCronJobs(file *os.File) ([]string, map[int]CronJob, map[int]CronJob) {
 	goodCronJobs := make(map[int]CronJob)
 	badCronJobs := make(map[int]CronJob)
 
-	unmarkedJobRegularExpression := UnmarkedRegularExpression()
-	markedJobRegularExpression := MarkedRegularExpression()
+	unmarkedJobRegularExpression := unmarkedJobRegularExpression()
+	markedJobRegularExpression := markedJobRegularExpression()
 	whiteSpaceRegularExpression := regexp.MustCompile(`\s+`)
 
 	// Read contents of cron file

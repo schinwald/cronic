@@ -48,14 +48,7 @@ func OnFocus(l *layouts.LegendModel) func(int) error {
 }
 
 func MakeAddModel() *AddModel {
-	items := []string{
-		"root",
-		"a",
-		"b",
-		"c",
-	}
-
-	userList := components.MakeListModel(items)
+	userList := components.MakeListModel(utils.GetAllUsers())
 
 	commandInput := components.MakeInputModel()
 	commandInput.Placeholder("./dishes")
