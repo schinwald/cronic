@@ -95,7 +95,7 @@ func MakeListModel(items []string) ListModel {
 
 	return ListModel{
 		list:                list,
-		focus:               on,
+		focus:               off,
 		focusedItemDelegate: focusedItemDelegate,
 		blurredItemDelegate: blurredItemDelegate,
 	}

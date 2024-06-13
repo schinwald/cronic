@@ -31,10 +31,10 @@ type AddModel struct {
 	focus               int
 	width               int
 	height              int
-	userList            components.ListModel
-	commandInput        components.InputModel
 	nameInput           components.InputModel
 	descriptionInput    components.InputModel
+	commandInput        components.InputModel
+	userList            components.ListModel
 	confirmationInput   components.InputModel
 	schedulePanel       layouts.ScheduleModel
 	legendPanel         *layouts.LegendModel
@@ -48,19 +48,20 @@ func OnFocus(l *layouts.LegendModel) func(int) error {
 }
 
 func MakeAddModel() *AddModel {
-	userList := components.MakeListModel(utils.GetAllUsers())
+	nameInput := components.MakeInputModel()
+	nameInput.Prompt("> ")
+	nameInput.Placeholder("Dishes Reminder")
+	nameInput.Focus()
+
+	descriptionInput := components.MakeInputModel()
+	descriptionInput.Prompt("> ")
+	descriptionInput.Placeholder("Reminder to clean the dishes")
 
 	commandInput := components.MakeInputModel()
 	commandInput.Prompt("> ")
 	commandInput.Placeholder("./dishes")
 
-	nameInput := components.MakeInputModel()
-	nameInput.Prompt("> ")
-	nameInput.Placeholder("Dishes Reminder")
-
-	descriptionInput := components.MakeInputModel()
-	descriptionInput.Prompt("> ")
-	descriptionInput.Placeholder("Reminder to clean the dishes")
+	userList := components.MakeListModel(utils.GetAllUsers())
 
 	confirmationInput := components.MakeInputModel()
 	confirmationInput.Placeholder("Yes")
@@ -77,12 +78,12 @@ func MakeAddModel() *AddModel {
 	cronjob := utils.MakeCronJob()
 
 	return &AddModel{
-		state:               user,
-		focus:               user,
-		userList:            userList,
-		commandInput:        commandInput,
+		state:               name,
+		focus:               name,
 		nameInput:           nameInput,
 		descriptionInput:    descriptionInput,
+		commandInput:        commandInput,
+		userList:            userList,
 		confirmationInput:   confirmationInput,
 		schedulePanel:       schedulePanel,
 		legendPanel:         legendPanel,
@@ -116,33 +117,15 @@ func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 		return m, nil
 	}
 
-	m.userList, cmd = m.userList.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.commandInput, cmd = m.commandInput.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.nameInput, cmd = m.nameInput.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.descriptionInput, cmd = m.descriptionInput.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.schedulePanel, cmd = m.schedulePanel.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.confirmationInput, cmd = m.confirmationInput.Update(msg)
-	cmds = append(cmds, cmd)
-
 	switch m.state {
-	case user:
-		m.cronjob.User(m.userList.Value())
-	case command:
-		m.cronjob.Command(m.commandInput.Value())
 	case name:
 		m.cronjob.Name(m.nameInput.Value())
 	case description:
 		m.cronjob.Description(m.descriptionInput.Value())
+	case command:
+		m.cronjob.Command(m.commandInput.Value())
+	case user:
+		m.cronjob.User(m.userList.Value())
 	case schedule:
 		err = m.cronjob.Expression(m.schedulePanel.CronExpression())
 		if err != nil {
@@ -155,6 +138,24 @@ func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 		m.nextOccurrencePanel.NextOccurrence(m.cronjob.Next)
 	case confirmation:
 	}
+
+	m.nameInput, cmd = m.nameInput.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.descriptionInput, cmd = m.descriptionInput.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.commandInput, cmd = m.commandInput.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.userList, cmd = m.userList.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.schedulePanel, cmd = m.schedulePanel.Update(msg)
+	cmds = append(cmds, cmd)
+
+	m.confirmationInput, cmd = m.confirmationInput.Update(msg)
+	cmds = append(cmds, cmd)
 
 	m.legendPanel, cmd = m.legendPanel.Update(msg)
 	cmds = append(cmds, cmd)
@@ -169,28 +170,6 @@ func (m AddModel) View() string {
 	var view strings.Builder
 
 	titleStyle := lipgloss.NewStyle().Foreground(styles.PrimaryColor)
-
-	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
-		titleStyle.Render("Who do you want to run this command?"),
-		m.userList.View(),
-		"",
-	))
-	if m.state == user {
-		return view.String()
-	}
-
-	view.WriteRune('\n')
-
-	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
-		titleStyle.Render("What is the command?"),
-		m.commandInput.View(),
-		"",
-	))
-	if m.state == command {
-		return view.String()
-	}
-
-	view.WriteRune('\n')
 
 	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
 		titleStyle.Render("What name would you give this cronjob?"),
@@ -209,6 +188,28 @@ func (m AddModel) View() string {
 		"",
 	))
 	if m.state == description {
+		return view.String()
+	}
+
+	view.WriteRune('\n')
+
+	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
+		titleStyle.Render("What is the command?"),
+		m.commandInput.View(),
+		"",
+	))
+	if m.state == command {
+		return view.String()
+	}
+
+	view.WriteRune('\n')
+
+	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
+		titleStyle.Render("Who do you want to run this command?"),
+		m.userList.View(),
+		"",
+	))
+	if m.state == user {
 		return view.String()
 	}
 
@@ -249,19 +250,19 @@ func (m *AddModel) SubmitStep() bool {
 	var err error
 
 	switch m.state {
-	case user:
-		m.SetFocus(command)
-		m.state = command
-		return true
-	case command:
-		m.SetFocus(name)
-		m.state = name
-		return true
 	case name:
 		m.SetFocus(description)
 		m.state = description
 		return true
 	case description:
+		m.SetFocus(command)
+		m.state = command
+		return true
+	case command:
+		m.SetFocus(user)
+		m.state = user
+		return true
+	case user:
 		m.SetFocus(schedule)
 		m.state = schedule
 		return true
@@ -287,10 +288,10 @@ func (m *AddModel) SubmitStep() bool {
 }
 
 func (m *AddModel) Blur() error {
-	m.userList.Blur()
-	m.commandInput.Blur()
 	m.nameInput.Blur()
 	m.descriptionInput.Blur()
+	m.commandInput.Blur()
+	m.userList.Blur()
 	m.schedulePanel.Blur()
 	m.confirmationInput.Blur()
 
@@ -299,21 +300,21 @@ func (m *AddModel) Blur() error {
 
 func (m *AddModel) PreviousFocus() bool {
 	switch m.focus {
-	case user:
-		return false
-	case command:
-		m.SetFocus(user)
-		return true
 	case name:
-		m.SetFocus(command)
 		return true
 	case description:
 		m.SetFocus(name)
 		return true
+	case command:
+		m.SetFocus(description)
+		return true
+	case user:
+		m.SetFocus(command)
+		return true
 	case schedule:
 		isPreviousFocused := m.schedulePanel.PreviousFocus()
 		if !isPreviousFocused {
-			m.SetFocus(description)
+			m.SetFocus(user)
 		}
 		return true
 	case confirmation:
@@ -326,16 +327,16 @@ func (m *AddModel) PreviousFocus() bool {
 
 func (m *AddModel) NextFocus() bool {
 	switch m.focus {
-	case user:
-		m.SetFocus(command)
-		return true
-	case command:
-		m.SetFocus(name)
-		return true
 	case name:
 		m.SetFocus(description)
 		return true
 	case description:
+		m.SetFocus(command)
+		return true
+	case command:
+		m.SetFocus(user)
+		return true
+	case user:
 		m.SetFocus(schedule)
 		return true
 	case schedule:
@@ -359,17 +360,17 @@ func (m *AddModel) SetFocus(focus int) error {
 	m.Blur()
 
 	switch focus {
-	case user:
-		m.userList.Focus()
-		return nil
-	case command:
-		m.commandInput.Focus()
-		return nil
 	case name:
 		m.nameInput.Focus()
 		return nil
 	case description:
 		m.descriptionInput.Focus()
+		return nil
+	case command:
+		m.commandInput.Focus()
+		return nil
+	case user:
+		m.userList.Focus()
 		return nil
 	case schedule:
 		m.schedulePanel.Focus()
