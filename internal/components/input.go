@@ -5,21 +5,31 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/schinwald/cronic/internal/styles"
+)
+
+var (
+	focusedPromptStyle = lipgloss.NewStyle().Foreground(styles.ForegroundColor)
+	blurredPromptStyle = lipgloss.NewStyle().Foreground(styles.TernaryColor)
 )
 
 type InputModel struct {
-	textInput textinput.Model
-	err       error
+	textInput   textinput.Model
+	prompt      string
+	promptStyle lipgloss.Style
+	err         error
 }
 
 func MakeInputModel() InputModel {
 	ti := textinput.New()
 	ti.Prompt = ""
-	ti.Placeholder = "*"
+	ti.Placeholder = ""
 
 	return InputModel{
-		textInput: ti,
-		err:       nil,
+		textInput:   ti,
+		promptStyle: focusedPromptStyle,
+		err:         nil,
 	}
 }
 
@@ -46,16 +56,25 @@ func (m InputModel) Update(msg tea.Msg) (InputModel, tea.Cmd) {
 
 func (m InputModel) View() string {
 	var view strings.Builder
+
+	view.WriteString(m.promptStyle.Render(m.prompt))
 	view.WriteString(m.textInput.View())
+
 	return view.String()
 }
 
 func (m *InputModel) Focus() {
 	m.textInput.Focus()
+	m.promptStyle = focusedPromptStyle
 }
 
 func (m *InputModel) Blur() {
 	m.textInput.Blur()
+	m.promptStyle = blurredPromptStyle
+}
+
+func (m *InputModel) Prompt(value string) {
+	m.prompt = value
 }
 
 func (m *InputModel) Placeholder(value string) {

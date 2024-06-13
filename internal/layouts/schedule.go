@@ -31,10 +31,19 @@ func defaultFocusCallback(focus int) error {
 
 func MakeScheduleModel() ScheduleModel {
 	minuteInput := components.MakeInputModel()
+	minuteInput.Placeholder("*")
+
 	hourInput := components.MakeInputModel()
+	hourInput.Placeholder("*")
+
 	dayOfMonthInput := components.MakeInputModel()
+	dayOfMonthInput.Placeholder("*")
+
 	monthInput := components.MakeInputModel()
+	monthInput.Placeholder("*")
+
 	dayOfWeekInput := components.MakeInputModel()
+	dayOfWeekInput.Placeholder("*")
 
 	return ScheduleModel{
 		focus:           minute,

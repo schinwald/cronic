@@ -28,6 +28,7 @@ var (
 var (
 	PrimaryColor          = lipgloss.Color(Green)
 	SecondaryColor        = lipgloss.Color(BrightBlack)
+	TernaryColor          = lipgloss.Color(BrightBlue)
 	ForegroundColor       = lipgloss.Color(White)
 	DimmedForegroundColor = lipgloss.Color(BrightBlack)
 	BorderStyle           = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(DimmedForegroundColor)

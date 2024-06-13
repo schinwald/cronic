@@ -51,12 +51,15 @@ func MakeAddModel() *AddModel {
 	userList := components.MakeListModel(utils.GetAllUsers())
 
 	commandInput := components.MakeInputModel()
+	commandInput.Prompt("> ")
 	commandInput.Placeholder("./dishes")
 
 	nameInput := components.MakeInputModel()
+	nameInput.Prompt("> ")
 	nameInput.Placeholder("Dishes Reminder")
 
 	descriptionInput := components.MakeInputModel()
+	descriptionInput.Prompt("> ")
 	descriptionInput.Placeholder("Reminder to clean the dishes")
 
 	confirmationInput := components.MakeInputModel()
@@ -180,7 +183,7 @@ func (m AddModel) View() string {
 
 	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
 		titleStyle.Render("What is the command?"),
-		fmt.Sprintf("> %s", m.commandInput.View()),
+		m.commandInput.View(),
 		"",
 	))
 	if m.state == command {
@@ -191,7 +194,7 @@ func (m AddModel) View() string {
 
 	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
 		titleStyle.Render("What name would you give this cronjob?"),
-		fmt.Sprintf("> %s", m.nameInput.View()),
+		m.nameInput.View(),
 		"",
 	))
 	if m.state == name {
@@ -202,7 +205,7 @@ func (m AddModel) View() string {
 
 	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
 		titleStyle.Render("How would you describe the cronjob?"),
-		fmt.Sprintf("> %s", m.descriptionInput.View()),
+		m.descriptionInput.View(),
 		"",
 	))
 	if m.state == description {

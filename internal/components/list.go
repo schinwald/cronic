@@ -14,12 +14,13 @@ import (
 const listHeight = 14
 
 var (
-	// titleStyle        = lipgloss.NewStyle().MarginLeft(2)
+	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
 	itemStyle         = lipgloss.NewStyle().PaddingLeft(2).Foreground(styles.DimmedForegroundColor)
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(0)
-	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingTop(3)
-	// helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
-	// quitTextStyle     = lipgloss.NewStyle().Margin(1, 0, 2, 4)
+	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(0)
+	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
+	quitTextStyle     = lipgloss.NewStyle().Margin(1, 0, 2, 4)
+	indicatorStyle    = lipgloss.NewStyle().Foreground(styles.ForegroundColor)
 )
 
 type item string
@@ -42,7 +43,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	fn := itemStyle.Render
 	if index == m.Index() {
 		fn = func(s ...string) string {
-			return selectedItemStyle.Render("> " + strings.Join(s, " "))
+			return selectedItemStyle.Render(indicatorStyle.Render(">") + " " + strings.Join(s, " "))
 		}
 	}
 
@@ -79,6 +80,7 @@ func MakeListModel(items []string) ListModel {
 	list.SetFilteringEnabled(false)
 	list.SetShowStatusBar(false)
 	list.SetShowHelp(false)
+	list.Styles.PaginationStyle.PaddingLeft(0)
 
 	return ListModel{
 		list:  list,
@@ -93,10 +95,24 @@ func (m ListModel) Init() tea.Cmd {
 func (m ListModel) Update(msg tea.Msg) (ListModel, tea.Cmd) {
 	var cmd tea.Cmd
 
-	if m.focus == on {
-		m.list, cmd = m.list.Update(msg)
+	// Ignore update if blurred
+	if m.focus == off {
+		return m, cmd
 	}
 
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch keypress := msg.String(); keypress {
+		case "enter":
+			i, ok := m.list.SelectedItem().(item)
+
+			if ok {
+				m.choice = string(i)
+			}
+		}
+	}
+
+	m.list, cmd = m.list.Update(msg)
 	return m, cmd
 }
 
@@ -105,15 +121,17 @@ func (m ListModel) View() string {
 }
 
 func (m ListModel) Value() string {
-	return m.list.SelectedItem().FilterValue()
+	return m.choice
 }
 
 func (m *ListModel) Focus() error {
+	indicatorStyle.Foreground(styles.ForegroundColor)
 	m.focus = on
 	return nil
 }
 
 func (m *ListModel) Blur() error {
 	m.focus = off
+	indicatorStyle.Foreground(styles.TernaryColor)
 	return nil
 }
