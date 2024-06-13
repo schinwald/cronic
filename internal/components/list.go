@@ -11,23 +11,24 @@ import (
 	"github.com/schinwald/cronic/internal/styles"
 )
 
-const listHeight = 14
-
 var (
-	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(2).Foreground(styles.DimmedForegroundColor)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(0)
-	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(0)
-	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
-	quitTextStyle     = lipgloss.NewStyle().Margin(1, 0, 2, 4)
-	indicatorStyle    = lipgloss.NewStyle().Foreground(styles.ForegroundColor)
+	titleStyle            = lipgloss.NewStyle().MarginLeft(2)
+	itemStyle             = lipgloss.NewStyle().PaddingLeft(2).Foreground(styles.DimmedForegroundColor)
+	selectedItemStyle     = lipgloss.NewStyle().PaddingLeft(0)
+	paginationStyle       = list.DefaultStyles().PaginationStyle.PaddingLeft(0)
+	helpStyle             = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
+	quitTextStyle         = lipgloss.NewStyle().Margin(1, 0, 2, 4)
+	focusedIndicatorStyle = lipgloss.NewStyle().Foreground(styles.ForegroundColor)
+	blurredIndicatorStyle = lipgloss.NewStyle().Foreground(styles.TernaryColor)
 )
 
 type item string
 
 func (i item) FilterValue() string { return "" }
 
-type itemDelegate struct{}
+type itemDelegate struct {
+	indicatorStyle lipgloss.Style
+}
 
 func (d itemDelegate) Height() int                             { return 1 }
 func (d itemDelegate) Spacing() int                            { return 0 }
@@ -43,7 +44,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	fn := itemStyle.Render
 	if index == m.Index() {
 		fn = func(s ...string) string {
-			return selectedItemStyle.Render(indicatorStyle.Render(">") + " " + strings.Join(s, " "))
+			return selectedItemStyle.Render(d.indicatorStyle.Render(">") + " " + strings.Join(s, " "))
 		}
 	}
 
@@ -51,9 +52,11 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 }
 
 type ListModel struct {
-	list   list.Model
-	choice string
-	focus  int
+	list                list.Model
+	choice              string
+	focus               int
+	focusedItemDelegate itemDelegate
+	blurredItemDelegate itemDelegate
 }
 
 const (
@@ -82,9 +85,19 @@ func MakeListModel(items []string) ListModel {
 	list.SetShowHelp(false)
 	list.Styles.PaginationStyle.PaddingLeft(0)
 
+	focusedItemDelegate := itemDelegate{
+		indicatorStyle: focusedIndicatorStyle,
+	}
+
+	blurredItemDelegate := itemDelegate{
+		indicatorStyle: blurredIndicatorStyle,
+	}
+
 	return ListModel{
-		list:  list,
-		focus: on,
+		list:                list,
+		focus:               on,
+		focusedItemDelegate: focusedItemDelegate,
+		blurredItemDelegate: blurredItemDelegate,
 	}
 }
 
@@ -125,13 +138,13 @@ func (m ListModel) Value() string {
 }
 
 func (m *ListModel) Focus() error {
-	indicatorStyle.Foreground(styles.ForegroundColor)
 	m.focus = on
+	m.list.SetDelegate(m.focusedItemDelegate)
 	return nil
 }
 
 func (m *ListModel) Blur() error {
 	m.focus = off
-	indicatorStyle.Foreground(styles.TernaryColor)
+	m.list.SetDelegate(m.blurredItemDelegate)
 	return nil
 }
