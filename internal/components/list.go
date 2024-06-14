@@ -113,18 +113,6 @@ func (m ListModel) Update(msg tea.Msg) (ListModel, tea.Cmd) {
 		return m, cmd
 	}
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
-		case "enter":
-			i, ok := m.list.SelectedItem().(item)
-
-			if ok {
-				m.choice = string(i)
-			}
-		}
-	}
-
 	m.list, cmd = m.list.Update(msg)
 	return m, cmd
 }
@@ -134,7 +122,7 @@ func (m ListModel) View() string {
 }
 
 func (m ListModel) Value() string {
-	return m.choice
+	return string(m.list.SelectedItem().(item))
 }
 
 func (m *ListModel) Focus() error {
