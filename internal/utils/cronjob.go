@@ -35,7 +35,7 @@ func MakeCronJob() *CronJob {
 	}
 
 	return &CronJob{
-		tag:                 fmt.Sprintf("CRONIC-%s", uuid.NewString()),
+		tag:                 generateTag(),
 		humanReadableEngine: humanReadableEngine,
 	}
 }
@@ -116,6 +116,10 @@ func (c CronJob) WriteCronJob() error {
 	}
 
 	return nil
+}
+
+func generateTag() string {
+	return fmt.Sprintf("CRONIC-%s", uuid.NewString())
 }
 
 func unmarkedJobRegularExpression() *regexp.Regexp {
@@ -223,7 +227,7 @@ func fixBadCronJobs(file *os.File, content []string, badCronJobs map[int]CronJob
 	for i := range badCronJobs {
 		badCronJob := badCronJobs[i]
 
-		badCronJob.tag = fmt.Sprintf("CRONIC-%s", uuid.New().String())
+		badCronJob.tag = generateTag()
 		badCronJob.name = "name"
 		badCronJob.description = "description"
 
