@@ -35,6 +35,7 @@ func MakeCronJob() *CronJob {
 	}
 
 	return &CronJob{
+		tag:                 fmt.Sprintf("CRONIC-%s", uuid.NewString()),
 		humanReadableEngine: humanReadableEngine,
 	}
 }
@@ -81,7 +82,7 @@ func (c *CronJob) Description(value string) {
 func (c CronJob) String() string {
 	return fmt.Sprintf("%s %s %s\t\t# %s - Name: %s, Description: %s",
 		c.expression,
-		c.name,
+		c.user,
 		c.command,
 		c.tag,
 		c.name,

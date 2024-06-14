@@ -261,7 +261,6 @@ func (m AddModel) View() string {
 		titleStyle.Render("Would you like to save the cronjob (Y/n)?"),
 		m.confirmationList.View(),
 	))
-	view.WriteRune('\n')
 	if m.state == confirmation {
 		return view.String()
 	}
