@@ -27,21 +27,21 @@ const (
 
 type AddModel struct {
 	Page
-	state               int
-	focus               int
-	width               int
-	height              int
-	nameInput           components.InputModel
-	descriptionInput    components.InputModel
-	commandInput        components.InputModel
-	userList            components.ListModel
-	flowList            components.ListModel
-	confirmationList    components.ListModel
-	schedulePanel       layouts.ScheduleModel
-	legendPanel         *layouts.LegendModel
-	nextOccurrencePanel layouts.NextOccurrenceModel
-	cronjob             *utils.CronJob
-	err                 error
+	state                int
+	focus                int
+	width                int
+	height               int
+	nameInput            components.InputModel
+	descriptionInput     components.InputModel
+	commandInput         components.InputModel
+	userList             components.ListModel
+	flowList             components.ListModel
+	confirmationList     components.ListModel
+	schedulePanel        layouts.ScheduleModel
+	legendPanel          *layouts.LegendModel
+	nextOccurrencePanels []layouts.NextOccurrenceModel
+	cronjob              *utils.CronJob
+	err                  error
 }
 
 func OnFocus(l *layouts.LegendModel) func(int) error {
@@ -75,23 +75,32 @@ func MakeAddModel() *AddModel {
 	// What is the difference between struct{}, &(struct{}) and &struct{}
 	schedulePanel.OnFocus(legendPanel.SetFocus)
 
-	nextOccurrencePanel := layouts.MakeNextOccurrenceModel()
+	// nextOccurrencePanel := layouts.MakeNextOccurrenceModel()
+	// nextOccurrencePanel.Title("First Occurence")
+
+	nextOccurrencePanels := []layouts.NextOccurrenceModel{
+		layouts.MakeNextOccurrenceModel("First Occurrence"),
+		layouts.MakeNextOccurrenceModel("Second Occurrence"),
+		layouts.MakeNextOccurrenceModel("Third Occurrence"),
+		layouts.MakeNextOccurrenceModel("Fourth Occurrence"),
+		layouts.MakeNextOccurrenceModel("Fifth Occurrence"),
+	}
 
 	cronjob := utils.MakeCronJob()
 
 	return &AddModel{
-		state:               name,
-		focus:               name,
-		nameInput:           nameInput,
-		descriptionInput:    descriptionInput,
-		commandInput:        commandInput,
-		userList:            userList,
-		flowList:            flowList,
-		confirmationList:    confirmationList,
-		schedulePanel:       schedulePanel,
-		legendPanel:         legendPanel,
-		nextOccurrencePanel: nextOccurrencePanel,
-		cronjob:             cronjob,
+		state:                name,
+		focus:                name,
+		nameInput:            nameInput,
+		descriptionInput:     descriptionInput,
+		commandInput:         commandInput,
+		userList:             userList,
+		flowList:             flowList,
+		confirmationList:     confirmationList,
+		schedulePanel:        schedulePanel,
+		legendPanel:          legendPanel,
+		nextOccurrencePanels: nextOccurrencePanels,
+		cronjob:              cronjob,
 	}
 }
 
@@ -137,12 +146,16 @@ func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 		err = m.cronjob.Expression(m.schedulePanel.CronExpression())
 		if err != nil {
 			m.schedulePanel.CronExplanation("")
-			m.nextOccurrencePanel.NextOccurrence(time.Time{})
+			for i, _ := range m.cronjob.Next {
+				m.nextOccurrencePanels[i].NextOccurrence(time.Time{})
+			}
 			break
 		}
 
 		m.schedulePanel.CronExplanation(m.cronjob.HumanReadable)
-		m.nextOccurrencePanel.NextOccurrence(m.cronjob.Next)
+		for i, next := range m.cronjob.Next {
+			m.nextOccurrencePanels[i].NextOccurrence(next)
+		}
 	case confirmation:
 	}
 
@@ -170,8 +183,10 @@ func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 	m.legendPanel, cmd = m.legendPanel.Update(msg)
 	cmds = append(cmds, cmd)
 
-	m.nextOccurrencePanel, cmd = m.nextOccurrencePanel.Update(msg)
-	cmds = append(cmds, cmd)
+	for i, _ := range m.nextOccurrencePanels {
+		m.nextOccurrencePanels[i], cmd = m.nextOccurrencePanels[i].Update(msg)
+		cmds = append(cmds, cmd)
+	}
 
 	return m, tea.Batch(cmds...)
 }
@@ -243,13 +258,22 @@ func (m AddModel) View() string {
 		}
 	}
 
+	nextOccurrencePanels := ""
+	for _, nextOccurrencePanel := range m.nextOccurrencePanels {
+		nextOccurrencePanel.Size(m.width, 4)
+
+		nextOccurrencePanels = lipgloss.JoinHorizontal(lipgloss.Left,
+			nextOccurrencePanels,
+			nextOccurrencePanel.View(),
+		)
+	}
+
 	m.schedulePanel.Size(67, 0)
 	m.legendPanel.Size(67, 0)
-	m.nextOccurrencePanel.Size(m.width, 4)
 	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
-		m.nextOccurrencePanel.View(),
 		m.schedulePanel.View(),
 		m.legendPanel.View(),
+		nextOccurrencePanels,
 	))
 	if m.state == schedule {
 		return view.String()

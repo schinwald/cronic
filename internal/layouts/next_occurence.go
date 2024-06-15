@@ -12,6 +12,7 @@ import (
 )
 
 type NextOccurrenceModel struct {
+	title  string
 	date   string
 	time   string
 	width  int
@@ -19,10 +20,11 @@ type NextOccurrenceModel struct {
 	err    error
 }
 
-func MakeNextOccurrenceModel() NextOccurrenceModel {
+func MakeNextOccurrenceModel(title string) NextOccurrenceModel {
 	return NextOccurrenceModel{
-		date: "N/A",
-		time: "N/A",
+		title: title,
+		date:  "N/A",
+		time:  "N/A",
 	}
 }
 
@@ -63,12 +65,12 @@ func (m NextOccurrenceModel) View() string {
 	content.WriteString(bodyStyle.Render(m.time))
 
 	paddingY, paddingX := 1, 3
-	headerBar := styles.PanelStyle("First Occurrence", content.String(), 24, m.height, paddingY, paddingX)
+	headerBar := styles.PanelStyle(m.title, content.String(), 24, m.height, paddingY, paddingX)
 
-	progressBar := styles.BlockStyle(m.width-lipgloss.Width(headerBar)-2, m.height)
+	// progressBar := styles.BlockStyle(m.width-lipgloss.Width(headerBar)-2, m.height)
 
-	joined := lipgloss.JoinHorizontal(lipgloss.Top, headerBar, progressBar)
-	view.WriteString(joined)
+	// joined := lipgloss.JoinHorizontal(lipgloss.Top, headerBar, progressBar)
+	view.WriteString(headerBar)
 
 	return view.String()
 }
@@ -76,6 +78,10 @@ func (m NextOccurrenceModel) View() string {
 func (m *NextOccurrenceModel) Size(width int, height int) {
 	m.width = width
 	m.height = height
+}
+
+func (m NextOccurrenceModel) Title(value string) {
+	m.title = value
 }
 
 func (m *NextOccurrenceModel) NextOccurrence(time time.Time) {

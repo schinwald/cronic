@@ -18,7 +18,7 @@ import (
 type CronJob struct {
 	HumanReadable       string
 	humanReadableEngine *cron.ExpressionDescriptor
-	Next                time.Time
+	Next                []time.Time
 	expression          string
 	schedule            cronexpr.Expression
 	user                string
@@ -53,7 +53,7 @@ func (c *CronJob) Expression(value string) error {
 
 	c.expression = value
 	c.schedule = *schedule
-	c.Next = schedule.Next(time.Now())
+	c.Next = schedule.NextN(time.Now(), 5)
 	c.HumanReadable = humanReadable
 
 	return nil
