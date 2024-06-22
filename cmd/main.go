@@ -57,7 +57,7 @@ func initialModel() windowModel {
 }
 
 func (m windowModel) Init() tea.Cmd {
-	return nil
+	return m.pages[m.state].Init()
 }
 
 func (m windowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

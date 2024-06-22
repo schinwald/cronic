@@ -3,7 +3,9 @@ package layouts
 import (
 	"strings"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/schinwald/cronic/internal/components"
 	"github.com/schinwald/cronic/internal/styles"
@@ -11,6 +13,7 @@ import (
 )
 
 type AIModel struct {
+	explanationLoader        spinner.Model
 	explanationInput         components.InputModel
 	expression               string
 	previous                 string
@@ -18,26 +21,32 @@ type AIModel struct {
 	debounce                 int
 	timeSinceLastInput       int
 	naturalLanguageProcessor *utils.NaturalLanguageProcessor
+	isGenerating             bool
 	width                    int
 	height                   int
 	err                      error
 }
 
 func MakeAIModel() *AIModel {
+	explanationLoader := spinner.New()
+	explanationLoader.Spinner = spinner.Dot
+	explanationLoader.Style = lipgloss.NewStyle().Foreground(styles.TernaryColor)
+
 	explanationInput := components.MakeInputModel()
 
 	naturalLanguageProcessor := utils.MakeNaturalLanguageProcessor()
 
 	return &AIModel{
+		explanationLoader:        explanationLoader,
 		explanationInput:         explanationInput,
 		current:                  "",
-		debounce:                 4,
+		debounce:                 3,
 		naturalLanguageProcessor: naturalLanguageProcessor,
 	}
 }
 
 func (m *AIModel) Init() tea.Cmd {
-	return nil
+	return m.explanationLoader.Tick
 }
 
 func (m *AIModel) Update(msg tea.Msg) (*AIModel, tea.Cmd) {
@@ -68,8 +77,14 @@ func (m *AIModel) Update(msg tea.Msg) (*AIModel, tea.Cmd) {
 
 	// Make a call to the LLM
 	if m.timeSinceLastInput == m.debounce {
+		cmds = append(cmds, m.explanationLoader.Tick)
 		m.cancelGeneration()
 		go m.generateCronExpressionFromExplanation()
+	}
+
+	if m.isGenerating {
+		m.explanationLoader, cmd = m.explanationLoader.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 
 	return m, tea.Batch(cmds...)
@@ -80,7 +95,14 @@ func (m *AIModel) View() string {
 
 	paddingY, paddingX := 1, 3
 
-	explanation := "> " + m.explanationInput.View()
+	var explanation string
+
+	if m.isGenerating {
+		explanation = m.explanationLoader.View() + m.explanationInput.View()
+	} else {
+		explanation = "> " + m.explanationInput.View()
+	}
+
 	view.WriteString(styles.PanelStyle("Schedule", explanation, m.width, m.height, paddingY, paddingX))
 
 	return view.String()
@@ -106,7 +128,9 @@ func (m *AIModel) cancelGeneration() {
 }
 
 func (m *AIModel) generateCronExpressionFromExplanation() {
+	m.isGenerating = true
 	m.expression = m.naturalLanguageProcessor.TextToCronjobExpression(m.explanationInput.Value())
+	m.isGenerating = false
 }
 
 func (m *AIModel) CronExpression() string {

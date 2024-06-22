@@ -109,7 +109,23 @@ func MakeAddModel() *AddModel {
 }
 
 func (m AddModel) Init() tea.Cmd {
-	return nil
+	var cmds []tea.Cmd
+
+	cmds = append(cmds, m.nameInput.Init())
+	cmds = append(cmds, m.descriptionInput.Init())
+	cmds = append(cmds, m.commandInput.Init())
+	cmds = append(cmds, m.userList.Init())
+	cmds = append(cmds, m.flowList.Init())
+	cmds = append(cmds, m.confirmationList.Init())
+	cmds = append(cmds, m.legendPanel.Init())
+	cmds = append(cmds, m.schedulePanel.Init())
+	cmds = append(cmds, m.aiPanel.Init())
+
+	for _, nextOccurrencePanel := range m.nextOccurrencePanels {
+		cmds = append(cmds, nextOccurrencePanel.Init())
+	}
+
+	return tea.Batch(cmds...)
 }
 
 func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
