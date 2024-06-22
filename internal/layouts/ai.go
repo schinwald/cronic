@@ -21,10 +21,10 @@ type AIModel struct {
 	debounce                 int
 	timeSinceLastInput       int
 	naturalLanguageProcessor *utils.NaturalLanguageProcessor
-	isGenerating             bool
 	width                    int
 	height                   int
 	err                      error
+	isGenerating             bool
 }
 
 func MakeAIModel() *AIModel {
@@ -46,6 +46,10 @@ func MakeAIModel() *AIModel {
 }
 
 func (m *AIModel) Init() tea.Cmd {
+	m.naturalLanguageProcessor.OnGenerated(func() {
+		m.isGenerating = false
+	})
+
 	return m.explanationLoader.Tick
 }
 
@@ -71,13 +75,17 @@ func (m *AIModel) Update(msg tea.Msg) (*AIModel, tea.Cmd) {
 	m.current = m.explanationInput.Value()
 	if m.current != m.previous {
 		m.timeSinceLastInput = 0
+
+		if !m.isGenerating {
+			m.isGenerating = true
+			cmds = append(cmds, m.explanationLoader.Tick)
+		}
 	} else {
 		m.timeSinceLastInput++
 	}
 
 	// Make a call to the LLM
 	if m.timeSinceLastInput == m.debounce {
-		cmds = append(cmds, m.explanationLoader.Tick)
 		m.cancelGeneration()
 		go m.generateCronExpressionFromExplanation()
 	}
@@ -128,9 +136,7 @@ func (m *AIModel) cancelGeneration() {
 }
 
 func (m *AIModel) generateCronExpressionFromExplanation() {
-	m.isGenerating = true
 	m.expression = m.naturalLanguageProcessor.TextToCronjobExpression(m.explanationInput.Value())
-	m.isGenerating = false
 }
 
 func (m *AIModel) CronExpression() string {

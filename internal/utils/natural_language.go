@@ -13,9 +13,10 @@ func InputToText(s string) (string, error) {
 }
 
 type NaturalLanguageProcessor struct {
-	llm    *ollama.LLM
-	ctx    context.Context
-	cancel context.CancelFunc
+	llm               *ollama.LLM
+	ctx               context.Context
+	cancel            context.CancelFunc
+	generatedCallback func()
 }
 
 func MakeNaturalLanguageProcessor() *NaturalLanguageProcessor {
@@ -33,6 +34,10 @@ func MakeNaturalLanguageProcessor() *NaturalLanguageProcessor {
 	}
 }
 
+func (n *NaturalLanguageProcessor) OnGenerated(callback func()) {
+	n.generatedCallback = callback
+}
+
 func (n NaturalLanguageProcessor) Done() <-chan struct{} {
 	return n.ctx.Done()
 }
@@ -47,6 +52,18 @@ func (n *NaturalLanguageProcessor) Cancel() {
 }
 
 func (n NaturalLanguageProcessor) TextToCronjobExpression(text string) string {
-	completion, _ := n.llm.Call(n.ctx, fmt.Sprintf(`Create a cronjob expression from the input "%s" without any explanation.`, text))
-	return completion
+	channel := make(chan string)
+
+	go func() {
+		completion, _ := n.llm.Call(n.ctx, fmt.Sprintf(`Create a cronjob expression from the input "%s" without any explanation.`, text))
+		channel <- completion
+	}()
+
+	select {
+	case <-n.ctx.Done():
+		return ""
+	case result := <-channel:
+		n.generatedCallback()
+		return result
+	}
 }
