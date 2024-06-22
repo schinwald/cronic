@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/ollama"
 )
 
@@ -48,9 +47,6 @@ func (n *NaturalLanguageProcessor) Cancel() {
 }
 
 func (n NaturalLanguageProcessor) TextToCronjobExpression(text string) string {
-	completion, _ := n.llm.Call(n.ctx, fmt.Sprintf("You are given this phrase \"%s\". If the phrase does not specify a date and time then say \"error\". If there is a date and time, write the cronjob expression using the phrase without any user or command. Do not provide any explanation either.", text),
-		llms.WithTemperature(0.1),
-	)
-
+	completion, _ := n.llm.Call(n.ctx, fmt.Sprintf(`Create a cronjob expression from the input "%s" without any explanation.`, text))
 	return completion
 }
