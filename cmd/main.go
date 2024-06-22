@@ -41,6 +41,7 @@ type windowModel struct {
 	pages  []pages.Page
 	width  int
 	height int
+	close  bool
 	err    error
 }
 
@@ -65,6 +66,10 @@ func (m windowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	m.width, m.height, m.err = term.GetSize(0)
 
+	if m.close {
+		return m, tea.Batch(tea.ClearScreen, tea.Quit)
+	}
+
 	if m.err != nil {
 		return m, nil
 	}
@@ -74,7 +79,7 @@ func (m windowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
-			return m, tea.Batch(tea.ClearScreen, tea.Quit)
+			m.close = true
 		}
 	case error:
 		m.err = msg
@@ -97,6 +102,10 @@ func (m windowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m windowModel) View() string {
 	style := lipgloss.NewStyle().Padding(1, 2)
+
+	if m.close {
+		return ""
+	}
 
 	m.pages[m.state].Size(
 		m.width-lipgloss.Width(style.Render("")),
