@@ -44,6 +44,15 @@ func (m *AIModel) Update(msg tea.Msg) (*AIModel, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
 
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.Type {
+		}
+	case error:
+		m.err = msg
+		return m, nil
+	}
+
 	m.explanationInput, cmd = m.explanationInput.Update(msg)
 	cmds = append(cmds, cmd)
 
@@ -73,7 +82,6 @@ func (m *AIModel) View() string {
 
 	explanation := "> " + m.explanationInput.View()
 	view.WriteString(styles.PanelStyle("Schedule", explanation, m.width, m.height, paddingY, paddingX))
-	view.WriteString(m.expression)
 
 	return view.String()
 }

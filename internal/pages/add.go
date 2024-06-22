@@ -21,6 +21,7 @@ const (
 	command
 	user
 	flow
+	ai
 	schedule
 	confirmation
 )
@@ -138,17 +139,50 @@ func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 
 	switch m.state {
 	case name:
+		m.nameInput, cmd = m.nameInput.Update(msg)
+		cmds = append(cmds, cmd)
+
 		m.cronjob.Name(m.nameInput.Value())
 	case description:
+		m.descriptionInput, cmd = m.descriptionInput.Update(msg)
+		cmds = append(cmds, cmd)
+
 		m.cronjob.Description(m.descriptionInput.Value())
 	case command:
+		m.commandInput, cmd = m.commandInput.Update(msg)
+		cmds = append(cmds, cmd)
+
 		m.cronjob.Command(m.commandInput.Value())
 	case user:
+		m.userList, cmd = m.userList.Update(msg)
+		cmds = append(cmds, cmd)
+
 		m.cronjob.User(m.userList.Value())
-	case schedule:
-		m.aiPanel.Focus()
+	case flow:
+		m.flowList, cmd = m.flowList.Update(msg)
+		cmds = append(cmds, cmd)
+	case ai:
 		m.aiPanel, cmd = m.aiPanel.Update(msg)
 		cmds = append(cmds, cmd)
+
+		err = m.cronjob.Expression(m.aiPanel.CronExpression())
+		if err != nil {
+			for i, _ := range m.cronjob.Next {
+				m.nextOccurrencePanels[i].NextOccurrence(time.Time{})
+			}
+			break
+		}
+
+		for i, next := range m.cronjob.Next {
+			m.nextOccurrencePanels[i].NextOccurrence(next)
+		}
+	case schedule:
+		m.schedulePanel, cmd = m.schedulePanel.Update(msg)
+		cmds = append(cmds, cmd)
+
+		m.legendPanel, cmd = m.legendPanel.Update(msg)
+		cmds = append(cmds, cmd)
+
 		err = m.cronjob.Expression(m.schedulePanel.CronExpression())
 		if err != nil {
 			m.schedulePanel.CronExplanation("")
@@ -163,31 +197,9 @@ func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 			m.nextOccurrencePanels[i].NextOccurrence(next)
 		}
 	case confirmation:
+		m.confirmationList, cmd = m.confirmationList.Update(msg)
+		cmds = append(cmds, cmd)
 	}
-
-	m.nameInput, cmd = m.nameInput.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.descriptionInput, cmd = m.descriptionInput.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.commandInput, cmd = m.commandInput.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.userList, cmd = m.userList.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.flowList, cmd = m.flowList.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.schedulePanel, cmd = m.schedulePanel.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.confirmationList, cmd = m.confirmationList.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.legendPanel, cmd = m.legendPanel.Update(msg)
-	cmds = append(cmds, cmd)
 
 	for i, _ := range m.nextOccurrencePanels {
 		m.nextOccurrencePanels[i], cmd = m.nextOccurrencePanels[i].Update(msg)
@@ -274,23 +286,32 @@ func (m AddModel) View() string {
 		)
 	}
 
-	m.schedulePanel.Size(67, 0)
-	m.legendPanel.Size(67, 0)
-	m.aiPanel.Size(67, 0)
-	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
-		m.schedulePanel.View(),
-		m.legendPanel.View(),
-		nextOccurrencePanels,
-		m.aiPanel.View(),
-	))
-	if m.state == schedule {
-		return view.String()
+	if m.flowList.Value() == "ai (recommended)" {
+		m.aiPanel.Size(67, 0)
+		view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
+			m.aiPanel.View(),
+			nextOccurrencePanels,
+		))
+		if m.state == ai {
+			return view.String()
+		}
+	} else if m.flowList.Value() == "traditional" {
+		m.schedulePanel.Size(67, 0)
+		m.legendPanel.Size(67, 0)
+		view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
+			m.schedulePanel.View(),
+			m.legendPanel.View(),
+			nextOccurrencePanels,
+		))
+		if m.state == schedule {
+			return view.String()
+		}
 	}
 
 	view.WriteRune('\n')
 
 	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
-		titleStyle.Render("Would you like to save the cronjob (Y/n)?"),
+		titleStyle.Render("Would you like to save the cronjob?"),
 		m.confirmationList.View(),
 	))
 	if m.state == confirmation {
@@ -326,17 +347,24 @@ func (m *AddModel) SubmitStep() bool {
 		m.state = flow
 		return true
 	case flow:
-		m.SetFocus(schedule)
-		m.state = schedule
+		if m.flowList.Value() == "ai (recommended)" {
+			m.SetFocus(ai)
+			m.state = ai
+		} else if m.flowList.Value() == "traditional" {
+			m.SetFocus(schedule)
+			m.state = schedule
+		}
+		return true
+	case ai:
+		m.SetFocus(confirmation)
+		m.state = confirmation
 		return true
 	case schedule:
 		isNextFocused := m.schedulePanel.NextFocus()
-
 		if !isNextFocused {
 			m.SetFocus(confirmation)
 			m.state = confirmation
 		}
-
 		return true
 	case confirmation:
 		if m.confirmationList.Value() == "yes" {
@@ -349,8 +377,13 @@ func (m *AddModel) SubmitStep() bool {
 		}
 
 		if m.confirmationList.Value() == "no" {
-			m.SetFocus(schedule)
-			m.state = schedule
+			if m.flowList.Value() == "ai (recommended)" {
+				m.SetFocus(ai)
+				m.state = ai
+			} else if m.flowList.Value() == "traditional" {
+				m.SetFocus(schedule)
+				m.state = schedule
+			}
 		}
 	}
 
@@ -363,6 +396,7 @@ func (m *AddModel) Blur() error {
 	m.commandInput.Blur()
 	m.userList.Blur()
 	m.flowList.Blur()
+	m.aiPanel.Blur()
 	m.schedulePanel.Blur()
 	m.confirmationList.Blur()
 
@@ -385,6 +419,10 @@ func (m *AddModel) PreviousFocus() bool {
 	case flow:
 		m.SetFocus(user)
 		return true
+	case ai:
+		m.SetFocus(flow)
+		m.state = flow
+		return true
 	case schedule:
 		isPreviousFocused := m.schedulePanel.PreviousFocus()
 		if !isPreviousFocused {
@@ -393,7 +431,13 @@ func (m *AddModel) PreviousFocus() bool {
 		}
 		return true
 	case confirmation:
-		m.SetFocus(schedule)
+		if m.flowList.Value() == "ai (recommended)" {
+			m.SetFocus(ai)
+			m.state = ai
+		} else if m.flowList.Value() == "traditional" {
+			m.SetFocus(schedule)
+			m.state = schedule
+		}
 		return true
 	}
 
@@ -419,11 +463,9 @@ func (m *AddModel) NextFocus() bool {
 		return true
 	case schedule:
 		isNextFocused := m.schedulePanel.NextFocus()
-
 		if !isNextFocused {
 			m.SetFocus(confirmation)
 		}
-
 		return isNextFocused
 	case confirmation:
 		return false
@@ -452,6 +494,9 @@ func (m *AddModel) SetFocus(focus int) error {
 		return nil
 	case flow:
 		m.flowList.Focus()
+		return nil
+	case ai:
+		m.aiPanel.Focus()
 		return nil
 	case schedule:
 		m.schedulePanel.Focus()
