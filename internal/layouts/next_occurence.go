@@ -67,9 +67,6 @@ func (m NextOccurrenceModel) View() string {
 	paddingY, paddingX := 1, 3
 	headerBar := styles.PanelStyle(m.title, content.String(), 24, m.height, paddingY, paddingX)
 
-	// progressBar := styles.BlockStyle(m.width-lipgloss.Width(headerBar)-2, m.height)
-
-	// joined := lipgloss.JoinHorizontal(lipgloss.Top, headerBar, progressBar)
 	view.WriteString(headerBar)
 
 	return view.String()

@@ -37,6 +37,7 @@ type AddModel struct {
 	userList             components.ListModel
 	flowList             components.ListModel
 	confirmationList     components.ListModel
+	aiPanel              *layouts.AIModel
 	schedulePanel        layouts.ScheduleModel
 	legendPanel          *layouts.LegendModel
 	nextOccurrencePanels []layouts.NextOccurrenceModel
@@ -68,15 +69,16 @@ func MakeAddModel() *AddModel {
 
 	confirmationList := components.MakeListModel([]string{"yes", "no"})
 
-	schedulePanel := layouts.MakeScheduleModel()
 	// Pointer used here
 	legendPanel := layouts.MakeLegendModel()
+
+	schedulePanel := layouts.MakeScheduleModel()
+
 	// Why does this work now since I am using a pointer above
 	// What is the difference between struct{}, &(struct{}) and &struct{}
 	schedulePanel.OnFocus(legendPanel.SetFocus)
 
-	// nextOccurrencePanel := layouts.MakeNextOccurrenceModel()
-	// nextOccurrencePanel.Title("First Occurence")
+	aiPanel := layouts.MakeAIModel()
 
 	nextOccurrencePanels := []layouts.NextOccurrenceModel{
 		layouts.MakeNextOccurrenceModel("First Occurrence"),
@@ -97,8 +99,9 @@ func MakeAddModel() *AddModel {
 		userList:             userList,
 		flowList:             flowList,
 		confirmationList:     confirmationList,
-		schedulePanel:        schedulePanel,
 		legendPanel:          legendPanel,
+		schedulePanel:        schedulePanel,
+		aiPanel:              aiPanel,
 		nextOccurrencePanels: nextOccurrencePanels,
 		cronjob:              cronjob,
 	}
@@ -143,6 +146,9 @@ func (m *AddModel) Update(msg tea.Msg) (Page, tea.Cmd) {
 	case user:
 		m.cronjob.User(m.userList.Value())
 	case schedule:
+		m.aiPanel.Focus()
+		m.aiPanel, cmd = m.aiPanel.Update(msg)
+		cmds = append(cmds, cmd)
 		err = m.cronjob.Expression(m.schedulePanel.CronExpression())
 		if err != nil {
 			m.schedulePanel.CronExplanation("")
@@ -270,10 +276,12 @@ func (m AddModel) View() string {
 
 	m.schedulePanel.Size(67, 0)
 	m.legendPanel.Size(67, 0)
+	m.aiPanel.Size(67, 0)
 	view.WriteString(lipgloss.JoinVertical(lipgloss.Left,
 		m.schedulePanel.View(),
 		m.legendPanel.View(),
 		nextOccurrencePanels,
+		m.aiPanel.View(),
 	))
 	if m.state == schedule {
 		return view.String()
