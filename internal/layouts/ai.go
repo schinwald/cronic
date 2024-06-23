@@ -136,7 +136,11 @@ func (m *AIModel) cancelGeneration() {
 }
 
 func (m *AIModel) generateCronExpressionFromExplanation() {
-	m.expression = m.naturalLanguageProcessor.TextToCronjobExpression(m.explanationInput.Value())
+	expression, err := m.naturalLanguageProcessor.TextToCronjobExpression(m.explanationInput.Value())
+	if err != nil {
+		return
+	}
+	m.expression = expression
 }
 
 func (m *AIModel) CronExpression() string {

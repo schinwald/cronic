@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
@@ -51,7 +52,7 @@ func (n *NaturalLanguageProcessor) Cancel() {
 	n.cancel = cancel
 }
 
-func (n NaturalLanguageProcessor) TextToCronjobExpression(text string) string {
+func (n NaturalLanguageProcessor) TextToCronjobExpression(text string) (string, error) {
 	channel := make(chan string)
 
 	go func() {
@@ -61,9 +62,9 @@ func (n NaturalLanguageProcessor) TextToCronjobExpression(text string) string {
 
 	select {
 	case <-n.ctx.Done():
-		return ""
+		return "", errors.New("cancelled generating cronjob expression from text")
 	case result := <-channel:
 		n.generatedCallback()
-		return result
+		return result, nil
 	}
 }
